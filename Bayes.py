@@ -13,7 +13,7 @@ class Bayes:
         self.mu_set  = mu_set
         self.cov_set = cov_set
 
-    def inferences(self, sample_point):
+    def predict(self, sample_point):
         """
         Bayes Inferences
         Predict the label of the point in the sample point by bayes inferences.
@@ -48,7 +48,7 @@ class Bayes:
         :param sample_label: [ sample_size * K ], np.array
         :return: accuracy of the Bayes prediction (float)
         """
-        y = np.argmax(self.inferences(sample_point), axis=1)
+        y = np.argmax(self.predict(sample_point), axis=1)
         t = np.argmax(sample_label, axis=1)
 
         return np.sum(y == t) / sample_point.shape[0]

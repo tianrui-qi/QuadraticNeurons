@@ -2,7 +2,7 @@ from visualization import *
 from Gaussian import Gaussian
 from Bayes import Bayes
 from EM import EM
-from Linear_Network import Linear_Network
+from LNN import LNN
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ import matplotlib.patches as mpatches
 
 D   = 2         # dimension of sample data point
 K   = 4         # number of Gaussian / classifications
-N_k = 10000     # number of sample for each Gaussian
+N_k = 1000000   # number of sample for each Gaussian
 
 
 neuron_num = {
@@ -18,19 +18,25 @@ neuron_num = {
     1: 100,
     2: 100,
     3: 100,
-    4: K
+    4: 100,
+    5: 100,
+    6: 100,
+    7: K
 }
 activation_func = {
-    0: Linear_Network.sigmoid,
-    1: Linear_Network.sigmoid,
-    2: Linear_Network.sigmoid,
-    3: Linear_Network.sigmoid,
-    4: Linear_Network.softmax
+    0: LNN.sigmoid,
+    1: LNN.sigmoid,
+    2: LNN.sigmoid,
+    3: LNN.sigmoid,
+    4: LNN.sigmoid,
+    5: LNN.sigmoid,
+    6: LNN.sigmoid,
+    7: LNN.softmax
 }
 
-train_number = 500
-gradient  = Linear_Network.gradient_bp     # gradient_ng, gradient_bp
-optimizer = Linear_Network.Adam         # SGD, AdaGrad, RMSprop, Adam
+train_number = 2000
+gradient  = LNN.gradient_bp     # gradient_ng, gradient_bp
+optimizer = LNN.Adam         # SGD, AdaGrad, RMSprop, Adam
 optimizer_para = {
     "lr":         0.01,    # float, for all optimizer
     "decay_rate": 0.99,     # float, for optimizer "RMSprop"
@@ -61,13 +67,13 @@ def init_mu_cov():
 if __name__ == "__main__":
     mu_set, cov_set = init_mu_cov()
 
-    """ Generate Samples """
+    ''' Generate Samples '''
 
     train_point, train_label, test_point, test_label, \
     sample_point, sample_label, = Gaussian(mu_set, cov_set).\
         generate_sample(N_k, load_sample=True, save_sample=True)
 
-    """ Visualization Parameters """
+    ''' Visualization Parameters '''
 
     x_max = sample_point[np.argmax(sample_point.T[0])][0]
     x_min = sample_point[np.argmin(sample_point.T[0])][0]
@@ -78,7 +84,7 @@ if __name__ == "__main__":
     legend = [mpatches.Patch(color=color[i], label="Gaussian_{}".format(i))
               for i in range(K) ]
 
-    """ Plot Samples """
+    ''' Plot Samples '''
     
     fig, ax = plt.subplots()
     plot_scatter(sample_point, sample_label, ax, color)
@@ -89,7 +95,7 @@ if __name__ == "__main__":
     plt.grid()
     fig.show()
 
-    """ Bayes Inferences """
+    ''' Bayes Inferences '''
 
     bayes = Bayes(mu_set, cov_set)
     bayes_accuracy = bayes.accuracy(train_point, train_label)
@@ -97,35 +103,78 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots()
     plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, bayes.inferences,
+    plot_decision_boundary(K, bayes.predict,
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
     plt.title("Bayes Inferences Decision Boundary")
     plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
     plt.grid()
     fig.show()
-
-    """ 1. EM """
+    
+    ''' A. Expectation Maximization (EM) '''
 
     em = EM()
     em_accuracy = em.train(train_point, train_label, test_point, test_label,
                            train_number, save_EM=True)
 
     fig, ax = plt.subplots()
-    plot_confidence_interval_unfill(em.mu_set, em.cov_set, ax, color)
-    plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).inferences,
+    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+    plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).predict,
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
-    plt.title("EM Decision Boundary")
+    plt.title("Expectation Maximization (EM) Decision Boundary")
     plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
     plt.grid()
     fig.show()
 
-    """ 2. Linear Neural Network """
+    ''' B. Linear Neural Network (LNN) '''
 
-    network = Linear_Network(D, neuron_num, activation_func, load_network=False)
-    network.train(train_point, train_label, test_point, test_label,
-                  train_number, gradient, optimizer, optimizer_para,
-                  save_network=True)
+    lnn = LNN(D, neuron_num, activation_func, load_LNN=False)
+    lnn_accuracy = lnn.train(train_point, train_label, test_point, test_label,
+                             train_number, gradient, optimizer, optimizer_para,
+                             save_LNN=True)
 
-    """ 3. Quadratic Neural Network """
+    fig, ax = plt.subplots()
+    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+    plot_decision_boundary(K, lnn.predict,
+                           ax, color, x_min, x_max, y_min, y_max)
+    plt.legend(handles=legend)
+    plt.title("Linear Neural Network (LNN) Decision Boundary")
+    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.grid()
+    fig.show()
+
+    ''' C. Quadratic Neural Network '''
+
+    """
+    def plot_result(self, bayes_accuracy):
+        # plot the accuracy cure
+        plt.plot(bayes_accuracy + np.zeros_like(self.train_accuracy_set),
+                 color="blue")
+        plt.plot(self.train_accuracy_set, color="red")
+        plt.plot(self.test_accuracy_set, color="green")
+
+        plt.legend(["Bayes", "Linear NN (train)", "Linear NN (test)"],
+                   fontsize=14)
+        plt.title("Linear Neural Network Accuracy (Detail)", fontsize=14)
+        plt.xlabel("Train Number", fontsize=14)
+        plt.ylabel("Accuracy", fontsize=14)
+        plt.ylim(0, 1)
+        plt.grid()
+        plt.show()
+
+        # plot the detail accuracy cure
+        plt.plot(bayes_accuracy + np.zeros_like(self.train_accuracy_set),
+                 linewidth=2, color="blue")
+        plt.plot(self.train_accuracy_set, color="red")
+        plt.plot(self.test_accuracy_set, color="green")
+
+        plt.legend(["Bayes", "Linear NN (train)", "Linear NN (test)"],
+                   fontsize=14)
+        plt.title("Linear Neural Network Accuracy (Detail)", fontsize=14)
+        plt.xlabel("Train Number", fontsize=14)
+        plt.ylabel("Accuracy", fontsize=14)
+        plt.ylim(bayes_accuracy-0.015, bayes_accuracy+0.005)
+        plt.grid()
+        plt.show()
+    """
