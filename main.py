@@ -1,19 +1,17 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
-from Gaussian import Gaussian_Set
+from visualization import *
+from Gaussian import Gaussian
 from Bayes import Bayes
 from EM import EM
 from Linear_Network import Linear_Network
 
-plt.rcParams["figure.figsize"] = (10.0, 10.0)
-
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 D   = 2         # dimension of sample data point
 K   = 4         # number of Gaussian / classifications
 N_k = 10000     # number of sample for each Gaussian
 
-EM_train_number = 100
 
 neuron_num = {
     0: 100,
@@ -42,8 +40,12 @@ optimizer_para = {
 }
 
 
-if __name__ == "__main__":
-    mu_0 = np.array([-3.0, 1.0])  # [ D ]
+def init_mu_cov():
+    """
+    :return: mu_set:  [ K * D ], np.array
+             cov_set: [ K * D * D ], np.array
+    """
+    mu_0 = np.array([-3.0, 1.0])                # [ D ]
     cov_0 = np.array([[1.0, 0.5], [0.5, 0.5]])  # [ D * D ]
     mu_1 = np.array([-2.0, -1.0])
     cov_1 = np.array([[3.0, 0.0], [0.0, 0.2]])
@@ -52,39 +54,78 @@ if __name__ == "__main__":
     mu_3 = np.array([2.0, -1.0])
     cov_3 = np.array([[0.5, 0.0], [0.0, 2.0]])
 
-    mu_set = np.array([mu_0, mu_1, mu_2, mu_3])  # [ K * D ]
-    cov_set = np.array([cov_0, cov_1, cov_2, cov_3])  # [ K * D * D ]
+    return np.array([mu_0, mu_1, mu_2, mu_3]), \
+           np.array([cov_0, cov_1, cov_2, cov_3])
 
-    """ Initial Gaussian & Generate sample """
 
-    gaussian_set = Gaussian_Set(mu_set, cov_set)
-    sample_point, sample_label = gaussian_set.generate_point_set(N_k)
-    gaussian_set.plot_gaussian_set(plot_confidence_interval=True)
+if __name__ == "__main__":
+    mu_set, cov_set = init_mu_cov()
 
-    """ A. Bayes Inferences """
+    """ Generate Samples """
+
+    train_point, train_label, test_point, test_label, \
+    sample_point, sample_label, = Gaussian(mu_set, cov_set).\
+        generate_sample(N_k, load_sample=True, save_sample=True)
+
+    """ Visualization Parameters """
+
+    x_max = sample_point[np.argmax(sample_point.T[0])][0]
+    x_min = sample_point[np.argmin(sample_point.T[0])][0]
+    y_max = sample_point[np.argmax(sample_point.T[1])][1]
+    y_min = sample_point[np.argmin(sample_point.T[1])][1]
+    # plt.rcParams["figure.figsize"] = (10.0, 10.0)
+    color  = ("blue", "orange", "green", "red")
+    legend = [mpatches.Patch(color=color[i], label="Gaussian_{}".format(i))
+              for i in range(K) ]
+
+    """ Plot Samples """
+    
+    fig, ax = plt.subplots()
+    plot_scatter(sample_point, sample_label, ax, color)
+    plot_confidence_interval_fill(mu_set, cov_set, ax, color)
+    plt.legend(handles=legend)
+    plt.title("Gaussian Sample Point")
+    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.grid()
+    fig.show()
+
+    """ Bayes Inferences """
 
     bayes = Bayes(mu_set, cov_set)
-    bayes_accuracy = bayes.bayes_accuracy(sample_point, sample_label)
+    bayes_accuracy = bayes.accuracy(train_point, train_label)
     print("Bayes Inferences Accuracy: %10.7f" % bayes_accuracy)
-    bayes.plot_decision_boundary(sample_point, plot_confidence_interval=True)
 
-    """ B. GMM """
-    em = EM(sample_point, sample_label)
-    em.train(EM_train_number)
+    fig, ax = plt.subplots()
+    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+    plot_decision_boundary(K, bayes.inferences,
+                           ax, color, x_min, x_max, y_min, y_max)
+    plt.legend(handles=legend)
+    plt.title("Bayes Inferences Decision Boundary")
+    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.grid()
+    fig.show()
 
-    """ C. Linear Neural Network """
+    """ 1. EM """
 
-    # get test sample
-    gaussian_set_test = Gaussian_Set(mu_set, cov_set)
-    test_point, test_label = gaussian_set_test.generate_point_set(N_k * 4)
-    # train
+    em = EM()
+    em_accuracy = em.train(train_point, train_label, test_point, test_label,
+                           train_number, save_EM=True)
+
+    fig, ax = plt.subplots()
+    plot_confidence_interval_unfill(em.mu_set, em.cov_set, ax, color)
+    plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).inferences,
+                           ax, color, x_min, x_max, y_min, y_max)
+    plt.legend(handles=legend)
+    plt.title("EM Decision Boundary")
+    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.grid()
+    fig.show()
+
+    """ 2. Linear Neural Network """
+
     network = Linear_Network(D, neuron_num, activation_func, load_network=False)
-    network.train(sample_point, sample_label, test_point, test_label,
+    network.train(train_point, train_label, test_point, test_label,
                   train_number, gradient, optimizer, optimizer_para,
                   save_network=True)
-    # plot train result
-    network.plot_result(bayes_accuracy)
-    network.plot_decision_boundary(sample_point, mu_set, cov_set,
-                                   plot_confidence_interval=True)
 
-    """ D. Quadratic Neural Network """
+    """ 3. Quadratic Neural Network """
