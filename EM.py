@@ -19,7 +19,8 @@ class EM:
 
     def initialize_EM(self):
         """
-        initialize mu, cov, prior probability, posterior probability
+        Initialize mu, cov, prior probability, posterior probability.
+        Use before start the first E step (before start iteration).
         """
         self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
         self.mu_set  = np.random.randn(self.K, self.D)      # [ K * D ]
@@ -81,8 +82,7 @@ class EM:
     def train(self, train_point, train_label, test_point, test_label,
               train_number, save_EM=False):
         """
-        Repeat E step and M step for "train_number" time. Store the accuracy of
-        train in "train_accuracy".
+        Repeat E step and M step for "train_number" time.
 
         :param train_point: [ sample_size * D ], np.array
         :param train_label: [ sample_size * K ], np.array
@@ -91,7 +91,7 @@ class EM:
         :param train_number: number of iteration
         :param save_EM: save "train_accuracy" in file "result" or not, bool
         :return: [ train_number ], np.array
-            list of accuracy after each train/iteration
+            accuracy for test sample after each train/iteration
         """
         self.K = len(train_label[0])
         self.N, self.D = train_point.shape
@@ -111,7 +111,7 @@ class EM:
             test_accuracy.append(accuracy)
 
             # print result
-            print("%4d\tEM Accuracy: %10.7f" % (i, accuracy))
+            print("%4d\tA: %7.5f" % (i, accuracy))
 
         # save result as .csv
         if save_EM:
