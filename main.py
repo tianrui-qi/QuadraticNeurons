@@ -1,12 +1,19 @@
-from Gaussian import *
-from Bayes import *
-from Linear_Network import *
+import numpy as np
+import matplotlib.pyplot as plt
+
+from Gaussian import Gaussian_Set
+from Bayes import Bayes
+from EM import EM
+from Linear_Network import Linear_Network
+
 plt.rcParams["figure.figsize"] = (10.0, 10.0)
 
 
 D   = 2         # dimension of sample data point
 K   = 4         # number of Gaussian / classifications
 N_k = 10000     # number of sample for each Gaussian
+
+EM_train_number = 100
 
 neuron_num = {
     0: 100,
@@ -62,6 +69,8 @@ if __name__ == "__main__":
     bayes.plot_decision_boundary(sample_point, plot_confidence_interval=True)
 
     """ B. GMM """
+    em = EM(sample_point, sample_label)
+    em.train(EM_train_number)
 
     """ C. Linear Neural Network """
 

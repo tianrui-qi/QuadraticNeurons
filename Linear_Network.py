@@ -22,13 +22,13 @@ class Linear_Network:
         self.m = {}     # for optimizer "Adam"
         self.v = {}     # for optimizer "Adam"
 
-        self._initialize_network(load_network)
-
         # result
         self.train_loss_set = []
         self.test_loss_set  = []
         self.train_accuracy_set  = []
         self.test_accuracy_set   = []
+
+        self._initialize_network(load_network)
 
     """ Constructor """
 
