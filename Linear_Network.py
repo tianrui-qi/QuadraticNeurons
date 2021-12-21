@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import matplotlib.patches as mp
 import matplotlib.pyplot as plt
 
 
@@ -95,33 +94,6 @@ class Linear_Network:
         sample_point = (sample_point + shift) * scale
 
         return sample_point     # [ sample_size * D ], np.array
-
-    @staticmethod
-    def split_data(sample_point, sample_label):
-        """
-        Split the sample point into two part: train and test.
-        Number of train = (1-1/K) * N
-        Number of test  = (  1/K) * N = N - Number of train
-
-        :param sample_point: [ sample_size * D ], np.array
-        :param sample_label: [ sample_size * K ], np.array
-        :return: train and test point and label that we will use in "train"
-        """
-        N = len(sample_point)
-        N_test = int(N/len(sample_label[0]))
-
-        train_point, train_label = [], []
-        test_point, test_label = [], []
-
-        for i in range(N_test):
-            test_point.append(sample_point[i])
-            test_label.append(sample_label[i])
-        for i in range(N_test, N):
-            train_point.append(sample_point[i])
-            train_label.append(sample_label[i])
-
-        return np.array(train_point), np.array(train_label), \
-               np.array(test_point), np.array(test_label)
 
     # noinspection PyTypeChecker
     def save_network(self):
@@ -474,9 +446,9 @@ class Linear_Network:
 
         plt.legend(["Bayes", "Linear NN (train)", "Linear NN (test)"],
                    fontsize=14)
-        plt.title("Linear Neural Network Accuracy (Detail)")
-        plt.xlabel("Train Number")
-        plt.ylabel("Accuracy")
+        plt.title("Linear Neural Network Accuracy (Detail)", fontsize=14)
+        plt.xlabel("Train Number", fontsize=14)
+        plt.ylabel("Accuracy", fontsize=14)
         plt.ylim(0, 1)
         plt.grid()
         plt.show()
@@ -489,76 +461,9 @@ class Linear_Network:
 
         plt.legend(["Bayes", "Linear NN (train)", "Linear NN (test)"],
                    fontsize=14)
-        plt.title("Linear Neural Network Accuracy (Detail)")
-        plt.xlabel("Train Number")
-        plt.ylabel("Accuracy")
+        plt.title("Linear Neural Network Accuracy (Detail)", fontsize=14)
+        plt.xlabel("Train Number", fontsize=14)
+        plt.ylabel("Accuracy", fontsize=14)
         plt.ylim(bayes_accuracy-0.015, bayes_accuracy+0.005)
-        plt.grid()
-        plt.show()
-
-    def plot_confidence_interval(self, mu_set, cov_set, ax, color):
-        """
-        Help function for "plot_decision_boundary", using to plot the confident
-        interval ellipse (99.73%) of the normal distribution
-
-        :param mu_set: mean set, mean of each Gaussian, [ K * ... ]
-        :param cov_set: covariance of each Gaussian, [ K * ... ]
-        :param ax: axes object of the 'fig'
-        :param color: color of the ellipse
-        """
-        # P Value of Chi-Square->99.73%: 11.8 ; 95.45%: 6.18 ; 68.27%: 2.295
-        # P Value from Chi-Square Calculator:
-        # https://www.socscistatistics.com/pvalues/chidistribution.aspx
-        confidence = 11.8
-        for k in range(self.K):
-            # calculate eigenvalue and eigenvector
-            eigenvalue, eigenvector = np.linalg.eig(cov_set[k])
-            sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
-
-            # calculate all the parameter needed for plotting ellipse
-            width = 2 * np.sqrt(confidence) * sqrt_eigenvalue[0]
-            height = 2 * np.sqrt(confidence) * sqrt_eigenvalue[1]
-            angle = np.rad2deg(np.arccos(eigenvector[0, 0]))
-
-            # plot the ellipse
-            ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
-                             angle=angle, fill=False, edgecolor=color[k],
-                             linewidth=2, label="Gaussian_{}".format(k))
-            ax.add_artist(ell)
-
-    def plot_decision_boundary(self, sample_point, mu_set, cov_set,
-                               plot_confidence_interval=False):
-        """
-        Plot the decision boundary of the Bayes and confidence interval (99.73%)
-        ellipses (if plot_confidence_interval=True).
-
-        :param sample_point: [ sample_size * D ], np.array
-        :param mu_set: mean set, mean of each Gaussian, [ K * ... ]
-        :param cov_set: covariance of each Gaussian, [ K * ... ]
-        :param plot_confidence_interval: plot confidence interval or not
-        """
-        color = ("blue", "orange", "green", "red", "yellow")
-        x_max = sample_point[np.argmax(sample_point.T[0])][0]
-        x_min = sample_point[np.argmin(sample_point.T[0])][0]
-        y_max = sample_point[np.argmax(sample_point.T[1])][1]
-        y_min = sample_point[np.argmin(sample_point.T[1])][1]
-
-        plt.rcParams["figure.figsize"] = (10.0, 10.0)
-        fig, ax = plt.subplots()
-
-        # plot decision boundary
-        x, y = np.meshgrid(np.linspace(x_min - 0.3, x_max + 0.3, 400),
-                           np.linspace(y_min - 0.3, y_max + 0.3, 400))
-
-        z = self.predict(np.c_[np.ravel(x), np.ravel(y)])
-        z = np.argmax(z, axis=1).reshape(x.shape)
-        ax.contourf(x, y, z, self.K - 1, alpha=0.15, colors=color)
-
-        # plot confidence interval
-        if plot_confidence_interval:
-            self.plot_confidence_interval(mu_set, cov_set, ax, color)
-
-        plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
-        plt.legend(fontsize=14)
         plt.grid()
         plt.show()
