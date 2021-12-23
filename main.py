@@ -13,6 +13,9 @@ D   = 2         # dimension of sample data point
 K   = 4         # number of Gaussian / classifications
 N_k = 15000     # number of sample for each Gaussian
 
+EM_train_number = 100
+NN_train_number = 300
+
 neuron_num = {
     0: 100,
     1: 100,
@@ -20,7 +23,6 @@ neuron_num = {
     3: 100,
     4: K
 }
-train_number = 300
 
 LNN_activation_func = {
     0: LNN.sigmoid,
@@ -101,8 +103,8 @@ if __name__ == "__main__":
     plot_scatter(sample_point, sample_label, ax, color)
     plot_confidence_interval_fill(mu_set, cov_set, ax, color)
     plt.legend(handles=legend)
-    plt.title("Gaussian Sample Point")
-    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.title("Gaussian Sample Point", fontsize=14)
+    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
     plt.grid()
     fig.show()
     
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     '''
 
     bayes = Bayes(mu_set, cov_set)
-    bayes_accuracy = bayes.accuracy(train_point, train_label)
+    bayes_accuracy = bayes.accuracy(test_point, test_label)
     print("Bayes Inferences Accuracy: %10.7f" % bayes_accuracy)
 
     fig, ax = plt.subplots()
@@ -119,68 +121,71 @@ if __name__ == "__main__":
     plot_decision_boundary(K, bayes.predict,
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
-    plt.title("Bayes Inferences Decision Boundary")
-    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.title("Bayes Inferences Decision Boundary", fontsize=14)
+    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.margins(0, 0)
     plt.grid()
     fig.show()
-    
+
     ''' 
     A. Expectation Maximization (EM) 
     '''
-    
-    em = EM()
-    em_accuracy = em.train(train_point, train_label, test_point, test_label,
-                           train_number, save_EM=True)
 
-    fig, ax = plt.subplots()
-    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).predict,
-                           ax, color, x_min, x_max, y_min, y_max)
-    plt.legend(handles=legend)
-    plt.title("Expectation Maximization (EM) Decision Boundary")
-    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
-    plt.grid()
-    fig.show()
-    
+    for i in range(30):     # test EM for 30 time
+        em = EM()
+        em.train(train_point, train_label, test_point, test_label,
+                 EM_train_number, save_result=i)
+
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+        plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).predict,
+                               ax, color, x_min, x_max, y_min, y_max)
+        plt.legend(handles=legend)
+        plt.title("Expectation Maximization (EM) Decision Boundary",
+                  fontsize=14)
+        plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+        plt.grid()
+        fig.show()
+
     ''' 
     B. Linear Neural Network (LNN) 
     '''
 
-    lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
-    lnn_train_accuracy, lnn_test_accuracy = \
+    for i in range(30):  # test LNN for 30 time
+        lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
         lnn.train(train_point, train_label, test_point, test_label,
-                  train_number, LNN_gradient, LNN_optimizer, optimizer_para,
-                  save_LNN=True)
+                  NN_train_number, LNN_gradient, LNN_optimizer, optimizer_para,
+                  save_LNN=True, save_result=i)
 
-    fig, ax = plt.subplots()
-    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, lnn.predict,
-                           ax, color, x_min, x_max, y_min, y_max)
-    plt.legend(handles=legend)
-    plt.title("Linear Neural Network (LNN) Decision Boundary")
-    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
-    plt.grid()
-    fig.show()
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+        plot_decision_boundary(K, lnn.predict,
+                               ax, color, x_min, x_max, y_min, y_max)
+        plt.legend(handles=legend)
+        plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
+        plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+        plt.grid()
+        fig.show()
 
     ''' 
     C. Quadratic Neural Network (QNN) 
     '''
 
-    qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
-    qnn_train_accuracy, qnn_test_accuracy = \
+    for i in range(30):  # test QNN for 30 time
+        qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
         qnn.train(train_point, train_label, test_point, test_label,
-                  train_number, QNN_gradient, QNN_optimizer, optimizer_para,
-                  save_QNN=True)
+                  NN_train_number, QNN_gradient, QNN_optimizer, optimizer_para,
+                  save_QNN=True, save_result=i)
 
-    fig, ax = plt.subplots()
-    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, qnn.predict,
-                           ax, color, x_min, x_max, y_min, y_max)
-    plt.legend(handles=legend)
-    plt.title("Quadratic Neural Network (QNN) Decision Boundary")
-    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
-    plt.grid()
-    fig.show()
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+        plot_decision_boundary(K, qnn.predict,
+                               ax, color, x_min, x_max, y_min, y_max)
+        plt.legend(handles=legend)
+        plt.title("Quadratic Neural Network (QNN) Decision Boundary", fontsize=14)
+        plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+        plt.grid()
+        fig.show()
 
     """
     def plot_result(self, bayes_accuracy):

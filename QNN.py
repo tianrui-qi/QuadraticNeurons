@@ -362,20 +362,32 @@ class QNN:
 
         return sample_point     # [ sample_size * D ], np.array
 
-    def save_QNN(self):
+    def save_result(self, save_result):
         """
-        Save all the parameters of the network in the file "save/QNN_" and
-        result in the file "result/QNN_." Notes that the network will be saved
-        only when variable of "train", "save_QNN" is True.
+        Save result in the file "result/QNN_." Notes that the result will be
+        saved only when variable of "train", "save_result" is not -1.
+
+        :param save_result: save all result in file "result" or not, int
+            if save_result == -1, mean do not save in file
+            if save_result != -1, save in file with name index
+                ie: result/QNN_test_accuracy_{save_EM}.csv
         """
         if not os.path.exists('result'): os.mkdir('result')
-        np.savetxt("result/QNN_train_loss.csv", self.train_loss, delimiter=",")
-        np.savetxt("result/QNN_test_loss.csv", self.test_loss, delimiter=",")
-        np.savetxt("result/QNN_train_accuracy.csv", self.train_accuracy,
-                   delimiter=",")
-        np.savetxt("result/QNN_test_accuracy.csv", self.test_accuracy,
-                   delimiter=",")
+        np.savetxt("result/QNN_train_loss_{}.csv".format(save_result),
+                   self.train_loss, delimiter=",")
+        np.savetxt("result/QNN_test_loss_{}.csv".format(save_result),
+                   self.test_loss, delimiter=",")
+        np.savetxt("result/QNN_train_accuracy_{}.csv".format(save_result),
+                   self.train_accuracy, delimiter=",")
+        np.savetxt("result/QNN_test_accuracy_{}.csv".format(save_result),
+                   self.test_accuracy, delimiter=",")
 
+    def save_QNN(self):
+        """
+        Save all the parameters of the network in the file "save/QNN_". Notes
+        that the network will be saved only when variable of "train", "save_QNN"
+        is True.
+        """
         if not os.path.exists('save'): os.mkdir('save')
         for key in self.para.keys():
             np.savetxt("save/QNN_para_{}.csv".format(key), self.para[key],
@@ -415,7 +427,7 @@ class QNN:
 
     def train(self, train_point, train_label, test_point, test_label,
               train_number, gradient, optimizer, optimizer_para,
-              save_QNN=False):
+              save_QNN=False, save_result=-1):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -428,10 +440,8 @@ class QNN:
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
         :param optimizer_para: the parameter dictionary for the optimizer
-        :param save_QNN: bool
-            save result in file "result" and parameters in file "save" or not
-        :return: [ train_number ], np.array
-            accuracy for test sample after each train/iteration
+        :param save_QNN: save parameters in file "save" or not, bool
+        :param save_result: save result in file "result" or not, int
         """
         # train_point = self.normalize(train_point)
         # test_point = self.normalize(test_point)
@@ -456,7 +466,6 @@ class QNN:
             print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
                   (i, train_loss, train_accuracy, test_loss, test_accuracy))
 
-        # save result as .csv
+        # save para/result as .csv
         if save_QNN: self.save_QNN()
-
-        return self.train_accuracy, self.test_accuracy
+        if save_result != -1: self.save_result(save_result)
