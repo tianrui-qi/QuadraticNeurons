@@ -80,7 +80,7 @@ class EM:
                               sum_post_p[k]
 
     def train(self, train_point, train_label, test_point, test_label,
-              train_number, save_EM=False):
+              train_number, save_result=-1):
         """
         Repeat E step and M step for "train_number" time.
 
@@ -89,9 +89,10 @@ class EM:
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
         :param train_number: number of iteration
-        :param save_EM: save "train_accuracy" in file "result" or not, bool
-        :return: [ train_number ], np.array
-            accuracy for test sample after each train/iteration
+        :param save_result: save "test_accuracy" in file "result" or not, int
+            if save_result == -1, mean do not save in file
+            if save_result != -1, save in file with name index
+                ie: result/EM_test_accuracy_{save_EM}.csv
         """
         self.K = len(train_label[0])
         self.N, self.D = train_point.shape
@@ -114,9 +115,7 @@ class EM:
             print("%4d\tA: %7.5f" % (i, accuracy))
 
         # save result as .csv
-        if save_EM:
+        if save_result != -1:
             if not os.path.exists('result'): os.mkdir('result')
-            np.savetxt("result/EM_test_accuracy.csv", test_accuracy,
-                       delimiter=",")
-
-        return test_accuracy
+            np.savetxt("result/EM_test_accuracy_{}.csv".format(save_result),
+                       test_accuracy, delimiter=",")
