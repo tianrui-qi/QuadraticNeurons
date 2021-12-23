@@ -37,8 +37,6 @@ class LNN:
 
         self.initialize_network(load_LNN)
 
-    """ Constructor """
-
     def initialize_network(self, load_LNN):
         """
         Initialize five dictionary of the parameters of object "LNN."
@@ -49,7 +47,7 @@ class LNN:
 
         :param load_LNN: bool
             If the parameters load from file "save" Notes that the network
-            are saved by the help function "save_network"
+            are saved by the help function "save_LNN"
         """
         if len(self.activation_func) != self.L:
             print('Error! Dimension of the "activation_func" not match!')
@@ -61,22 +59,25 @@ class LNN:
                 node_from = self.neuron_num[l - 1]
             node_to   = self.neuron_num[l]
 
-            # network parameter
+            # sd for initialize weight 'w', parameter of network
             sd = 0.01
             if self.activation_func[l] == self.sigmoid:
                 sd = np.sqrt(1 / node_from)
             elif self.activation_func[l] == self.relu:
                 sd = np.sqrt(2 / node_from)
-            self.para['w'+str(l)] = sd * np.random.randn(node_from, node_to)
-            self.para['b'+str(l)] = np.zeros( (1, node_to) )
 
-            # optimizer index
-            self.h['w'+str(l)] = np.zeros( (node_from, node_to) )
-            self.h['b'+str(l)] = np.zeros( (        1, node_to) )
-            self.m['w'+str(l)] = np.zeros( (node_from, node_to) )
-            self.m['b'+str(l)] = np.zeros( (        1, node_to) )
-            self.v['w'+str(l)] = np.zeros( (node_from, node_to) )
-            self.v['b'+str(l)] = np.zeros( (        1, node_to) )
+            # initialize parameters
+            key = 'w' + str(l)
+            self.para[key] = sd * np.random.randn(node_from, node_to)
+            self.h[key] = np.zeros((node_from, node_to))
+            self.m[key] = np.zeros((node_from, node_to))
+            self.v[key] = np.zeros((node_from, node_to))
+
+            key = 'b' + str(l)
+            self.para[key] = np.zeros((1, node_to))
+            self.h[key] = np.zeros((1, node_to))
+            self.m[key] = np.zeros((1, node_to))
+            self.v[key] = np.zeros((1, node_to))
 
         if load_LNN: self.load_LNN()
 
@@ -148,11 +149,11 @@ class LNN:
         """
          "Cross Entropy Error"
 
-         The t is correct label. The first layer of for loop is using to traverse
-         entire sample, and the second layer of for loop is using to control
-         which y value of that sample will affect the loss value. The "y" value
-         will affect the loss value only when it's in the same position of
-         correct label.
+         The t is correct label. The first layer of for loop is using to
+         traverse entire sample, and the second layer of for loop is using to
+         control which y value of that sample will affect the loss value. The
+         "y" value will affect the loss value only when it's in the same
+         position of correct label.
 
          Example,
                  t_i = [  0  0  1  0 ]       y_i = [ 10 20 10  2 ]
@@ -183,7 +184,7 @@ class LNN:
 
         :param sample_point: [ sample_size * D ], np.array
         :param sample_label: [ sample_size * K ], np.array
-        :return: dictionary, gradient for all the parameter
+        :return: dictionary, gradient for all the parameters
         """
         grad = {}
         for key in self.para.keys():
@@ -236,6 +237,8 @@ class LNN:
         :param sample_label: [ sample_size * K ], np.array
         :return: dictionary, gradient for all the parameter
         """
+        grad = {}
+
         # forward
         # a0 -> w0,b0 -> z0 -> a1 -> w1,b1 -> z1 -> a2
         a = {0: sample_point}
@@ -245,24 +248,15 @@ class LNN:
 
         # backward
         # da0 <- dw0,db0 <- dz0 <- da1 <- dw1,db1 <- dz1 <- da2
-        dw = {}
-        db = {}
-
         da = 0
         for l in range(self.L-1, -1, -1):
-            if l == self.L-1:
+            if l == self.L-1:   # softmax
                 dz = (a[l + 1] - sample_label) / len(sample_point)
-            else:
+            else:               # sigmoid
                 dz = da * (1.0 - a[l + 1]) * a[l + 1]
-            da = np.dot(dz, self.para['w' + str(l)].T)
-            dw[l] = np.dot(a[l].T, dz)
-            db[l] = np.sum(dz, axis=0)
-
-        # get gradient
-        grad = {}
-        for l in range(self.L):
-            grad['w'+str(l)] = dw[l]
-            grad['b'+str(l)] = db[l]
+            grad['w'+str(l)] = np.dot(a[l].T, dz)   # dw
+            grad['b'+str(l)] = np.sum(dz, axis=0)   # db
+            da = np.dot(dz, self.para['w'+str(l)].T)
 
         return grad
 
@@ -376,7 +370,7 @@ class LNN:
         """
         Save all the parameters of the network in the file "save/LNN_" and
         result in the file "result/LNN_." Notes that the network will be saved
-        only when variable of "train", "save_network" is True.
+        only when variable of "train", "save_LNN" is True.
         """
         if not os.path.exists('result'): os.mkdir('result')
         np.savetxt("result/LNN_train_loss.csv", self.train_loss, delimiter=",")
@@ -391,30 +385,34 @@ class LNN:
             np.savetxt("save/LNN_para_{}.csv".format(key), self.para[key],
                        delimiter=",")
         for key in self.h.keys():
-            np.savetxt("save/LNN_h_{}.csv".format(key), self.h[key], delimiter=",")
+            np.savetxt("save/LNN_h_{}.csv".format(key), self.h[key],
+                       delimiter=",")
         for key in self.m.keys():
-            np.savetxt("save/LNN_m_{}.csv".format(key), self.m[key], delimiter=",")
+            np.savetxt("save/LNN_m_{}.csv".format(key), self.m[key],
+                       delimiter=",")
         for key in self.v.keys():
-            np.savetxt("save/LNN_v_{}.csv".format(key), self.v[key], delimiter=",")
+            np.savetxt("save/LNN_v_{}.csv".format(key), self.v[key],
+                       delimiter=",")
 
     def load_LNN(self):
         """
         Load all the parameters of the network from the file "save/LNN_".
         Notes that the network's parameters will be initialized by the help
-        function only when variable of "initialize_network", "load_network" is
+        function only when variable of "initialize_network", "load_LNN" is
         True.
         """
         if not os.path.exists('save'): return
         for l in range(self.L):
             for k in ('w', 'b'):
-                self.para[k + str(l)] = np.loadtxt(
-                    "save/LNN_para_{}.csv".format(k + str(l)), delimiter=",")
-                self.h[k + str(l)] = np.loadtxt(
-                    "save/LNN_h_{}.csv".format(k + str(l)), delimiter=",")
-                self.m[k + str(l)] = np.loadtxt(
-                    "save/LNN_m_{}.csv".format(k + str(l)), delimiter=",")
-                self.v[k + str(l)] = np.loadtxt(
-                    "save/LNN_v_{}.csv".format(k + str(l)), delimiter=",")
+                key = k+str(l)
+                self.para[key] = np.loadtxt(
+                    "save/LNN_para_{}.csv".format(key), delimiter=",")
+                self.h[key] = np.loadtxt(
+                    "save/LNN_h_{}.csv".format(key), delimiter=",")
+                self.m[key] = np.loadtxt(
+                    "save/LNN_m_{}.csv".format(key), delimiter=",")
+                self.v[key] = np.loadtxt(
+                    "save/LNN_v_{}.csv".format(key), delimiter=",")
 
     """ Trainer """
 
@@ -422,7 +420,7 @@ class LNN:
               train_number, gradient, optimizer, optimizer_para,
               save_LNN=False):
         """
-        Use a gradient calculator to calculate the gradient of each parameters
+        Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
 
         :param train_point: [ sample_size * D ], np.array
@@ -438,8 +436,8 @@ class LNN:
         :return: [ train_number ], np.array
             accuracy for test sample after each train/iteration
         """
-        train_point = self.normalize(train_point)
-        test_point = self.normalize(test_point)
+        # train_point = self.normalize(train_point)
+        # test_point = self.normalize(test_point)
 
         for i in range(train_number):
             # train
@@ -464,4 +462,4 @@ class LNN:
         # save result as .csv
         if save_LNN: self.save_LNN()
 
-        return self.test_accuracy
+        return self.train_accuracy, self.test_accuracy

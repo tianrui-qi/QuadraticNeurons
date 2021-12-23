@@ -3,6 +3,7 @@ from Gaussian import Gaussian
 from Bayes import Bayes
 from EM import EM
 from LNN import LNN
+from QNN import QNN
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,33 +11,37 @@ import matplotlib.patches as mpatches
 
 D   = 2         # dimension of sample data point
 K   = 4         # number of Gaussian / classifications
-N_k = 1000000   # number of sample for each Gaussian
-
+N_k = 15000     # number of sample for each Gaussian
 
 neuron_num = {
     0: 100,
     1: 100,
     2: 100,
     3: 100,
-    4: 100,
-    5: 100,
-    6: 100,
-    7: K
+    4: K
 }
-activation_func = {
+train_number = 300
+
+LNN_activation_func = {
     0: LNN.sigmoid,
     1: LNN.sigmoid,
     2: LNN.sigmoid,
     3: LNN.sigmoid,
-    4: LNN.sigmoid,
-    5: LNN.sigmoid,
-    6: LNN.sigmoid,
-    7: LNN.softmax
+    4: LNN.softmax
 }
+LNN_gradient  = LNN.gradient_bp  # gradient_ng, gradient_bp
+LNN_optimizer = LNN.Adam         # SGD, AdaGrad, RMSprop, Adam
 
-train_number = 2000
-gradient  = LNN.gradient_bp     # gradient_ng, gradient_bp
-optimizer = LNN.Adam         # SGD, AdaGrad, RMSprop, Adam
+QNN_activation_func = {
+    0: QNN.sigmoid,
+    1: QNN.sigmoid,
+    2: QNN.sigmoid,
+    3: QNN.sigmoid,
+    4: QNN.softmax
+}
+QNN_gradient  = QNN.gradient_bp  # gradient_ng, gradient_bp
+QNN_optimizer = QNN.Adam         # SGD, AdaGrad, RMSprop, Adam
+
 optimizer_para = {
     "lr":         0.01,    # float, for all optimizer
     "decay_rate": 0.99,     # float, for optimizer "RMSprop"
@@ -67,13 +72,17 @@ def init_mu_cov():
 if __name__ == "__main__":
     mu_set, cov_set = init_mu_cov()
 
-    ''' Generate Samples '''
+    ''' 
+    Generate Samples 
+    '''
 
     train_point, train_label, test_point, test_label, \
     sample_point, sample_label, = Gaussian(mu_set, cov_set).\
         generate_sample(N_k, load_sample=True, save_sample=True)
 
-    ''' Visualization Parameters '''
+    ''' 
+    Visualization Parameters 
+    '''
 
     x_max = sample_point[np.argmax(sample_point.T[0])][0]
     x_min = sample_point[np.argmin(sample_point.T[0])][0]
@@ -84,8 +93,10 @@ if __name__ == "__main__":
     legend = [mpatches.Patch(color=color[i], label="Gaussian_{}".format(i))
               for i in range(K) ]
 
-    ''' Plot Samples '''
-    
+    ''' 
+    Plot Samples 
+    '''
+
     fig, ax = plt.subplots()
     plot_scatter(sample_point, sample_label, ax, color)
     plot_confidence_interval_fill(mu_set, cov_set, ax, color)
@@ -94,8 +105,10 @@ if __name__ == "__main__":
     plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
     plt.grid()
     fig.show()
-
-    ''' Bayes Inferences '''
+    
+    ''' 
+    Bayes Inferences 
+    '''
 
     bayes = Bayes(mu_set, cov_set)
     bayes_accuracy = bayes.accuracy(train_point, train_label)
@@ -111,8 +124,10 @@ if __name__ == "__main__":
     plt.grid()
     fig.show()
     
-    ''' A. Expectation Maximization (EM) '''
-
+    ''' 
+    A. Expectation Maximization (EM) 
+    '''
+    
     em = EM()
     em_accuracy = em.train(train_point, train_label, test_point, test_label,
                            train_number, save_EM=True)
@@ -126,13 +141,16 @@ if __name__ == "__main__":
     plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
     plt.grid()
     fig.show()
+    
+    ''' 
+    B. Linear Neural Network (LNN) 
+    '''
 
-    ''' B. Linear Neural Network (LNN) '''
-
-    lnn = LNN(D, neuron_num, activation_func, load_LNN=False)
-    lnn_accuracy = lnn.train(train_point, train_label, test_point, test_label,
-                             train_number, gradient, optimizer, optimizer_para,
-                             save_LNN=True)
+    lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
+    lnn_train_accuracy, lnn_test_accuracy = \
+        lnn.train(train_point, train_label, test_point, test_label,
+                  train_number, LNN_gradient, LNN_optimizer, optimizer_para,
+                  save_LNN=True)
 
     fig, ax = plt.subplots()
     plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
@@ -144,7 +162,25 @@ if __name__ == "__main__":
     plt.grid()
     fig.show()
 
-    ''' C. Quadratic Neural Network '''
+    ''' 
+    C. Quadratic Neural Network (QNN) 
+    '''
+
+    qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
+    qnn_train_accuracy, qnn_test_accuracy = \
+        qnn.train(train_point, train_label, test_point, test_label,
+                  train_number, QNN_gradient, QNN_optimizer, optimizer_para,
+                  save_QNN=True)
+
+    fig, ax = plt.subplots()
+    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
+    plot_decision_boundary(K, qnn.predict,
+                           ax, color, x_min, x_max, y_min, y_max)
+    plt.legend(handles=legend)
+    plt.title("Quadratic Neural Network (QNN) Decision Boundary")
+    plt.axis([x_min - 0.3, x_max + 0.3, y_min - 0.3, y_max + 0.3])
+    plt.grid()
+    fig.show()
 
     """
     def plot_result(self, bayes_accuracy):
