@@ -368,22 +368,22 @@ class LNN:
 
     def save_result(self, save_result):
         """
-        Save result in the file "result/LNN_." Notes that the result will be
+        Save result in the file "LNN_result." Notes that the result will be
         saved only when variable of "train", "save_result" is not -1.
 
-        :param save_result: save all result in file "result" or not, int
+        :param save_result: save all result in file "LNN_result" or not, int
             if save_result == -1, mean do not save in file
             if save_result != -1, save in file with name index
                 ie: result/LNN_test_accuracy_{save_EM}.csv
         """
-        if not os.path.exists('result'): os.mkdir('result')
-        np.savetxt("result/LNN_train_loss_{}.csv".format(save_result),
+        if not os.path.exists('LNN_result'): os.mkdir('LNN_result')
+        np.savetxt("LNN_result/train_loss_{}.csv".format(save_result),
                    self.train_loss, delimiter=",")
-        np.savetxt("result/LNN_test_loss_{}.csv".format(save_result),
+        np.savetxt("LNN_result/test_loss_{}.csv".format(save_result),
                    self.test_loss, delimiter=",")
-        np.savetxt("result/LNN_train_accuracy_{}.csv".format(save_result),
+        np.savetxt("LNN_result/train_accuracy_{}.csv".format(save_result),
                    self.train_accuracy, delimiter=",")
-        np.savetxt("result/LNN_test_accuracy_{}.csv".format(save_result),
+        np.savetxt("LNN_result/test_accuracy_{}.csv".format(save_result),
                    self.test_accuracy, delimiter=",")
 
     def save_LNN(self):

@@ -89,10 +89,10 @@ class EM:
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
         :param train_number: number of iteration
-        :param save_result: save "test_accuracy" in file "result" or not, int
+        :param save_result: save "test_accuracy" in file "EM_result" or not, int
             if save_result == -1, mean do not save in file
             if save_result != -1, save in file with name index
-                ie: result/EM_test_accuracy_{save_EM}.csv
+                ie: EM_result/accuracy_{save_EM}.csv
         """
         self.K = len(train_label[0])
         self.N, self.D = train_point.shape
@@ -116,6 +116,6 @@ class EM:
 
         # save result as .csv
         if save_result != -1:
-            if not os.path.exists('result'): os.mkdir('result')
-            np.savetxt("result/EM_test_accuracy_{}.csv".format(save_result),
+            if not os.path.exists('EM_result'): os.mkdir('EM_result')
+            np.savetxt("EM_result/accuracy_{}.csv".format(save_result),
                        test_accuracy, delimiter=",")
