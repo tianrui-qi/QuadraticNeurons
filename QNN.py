@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+
 class QNN:
     def __init__(self, dimension, neuron_num, activation_func,
                  load_QNN=False):
@@ -252,7 +253,7 @@ class QNN:
             dag = np.dot(dzg, self.para['wg'+str(l)].T)
             dab = np.dot(dzb, self.para['wb'+str(l)].T) * a[l]
 
-            da = (1/3) * (dar + dag + dab)
+            da = (1/4) * (dar + dag + dab + dab)
 
         return grad
 
@@ -364,22 +365,22 @@ class QNN:
 
     def save_result(self, save_result):
         """
-        Save result in the file "result/QNN_." Notes that the result will be
+        Save result in the file "QNN_result." Notes that the result will be
         saved only when variable of "train", "save_result" is not -1.
 
-        :param save_result: save all result in file "result" or not, int
+        :param save_result: save all result in file "QNN_result" or not, int
             if save_result == -1, mean do not save in file
             if save_result != -1, save in file with name index
                 ie: result/QNN_test_accuracy_{save_EM}.csv
         """
-        if not os.path.exists('result'): os.mkdir('result')
-        np.savetxt("result/QNN_train_loss_{}.csv".format(save_result),
+        if not os.path.exists('QNN_result'): os.mkdir('QNN_result')
+        np.savetxt("QNN_result/train_loss_{}.csv".format(save_result),
                    self.train_loss, delimiter=",")
-        np.savetxt("result/QNN_test_loss_{}.csv".format(save_result),
+        np.savetxt("QNN_result/test_loss_{}.csv".format(save_result),
                    self.test_loss, delimiter=",")
-        np.savetxt("result/QNN_train_accuracy_{}.csv".format(save_result),
+        np.savetxt("QNN_result/train_accuracy_{}.csv".format(save_result),
                    self.train_accuracy, delimiter=",")
-        np.savetxt("result/QNN_test_accuracy_{}.csv".format(save_result),
+        np.savetxt("QNN_result/test_accuracy_{}.csv".format(save_result),
                    self.test_accuracy, delimiter=",")
 
     def save_QNN(self):

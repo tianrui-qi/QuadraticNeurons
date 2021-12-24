@@ -100,8 +100,8 @@ def plot_decision_boundary(K, predict, ax, color, x_min, x_max, y_min, y_max):
     :param y_max: maximum y value in the "fig"
     :return:
     """
-    x, y = np.meshgrid(np.linspace(x_min - 0.3, x_max + 0.3, 400),
-                       np.linspace(y_min - 0.3, y_max + 0.3, 400))
+    x, y = np.meshgrid(np.linspace(x_min - 0.5, x_max + 0.5, 400),
+                       np.linspace(y_min - 0.5, y_max + 0.5, 400))
 
     z = predict(np.c_[np.ravel(x), np.ravel(y)])
     z = np.argmax(z, axis=1).reshape(x.shape)
