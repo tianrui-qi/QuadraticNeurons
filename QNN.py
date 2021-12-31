@@ -253,7 +253,7 @@ class QNN:
             dag = np.dot(dzg, self.para['wg'+str(l)].T)
             dab = np.dot(dzb, self.para['wb'+str(l)].T) * a[l]
 
-            da = (1/4) * (dar + dag + dab + dab)
+            da = dar + dag + dab + dab
 
         return grad
 
@@ -465,7 +465,8 @@ class QNN:
 
             # print result
             print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
-                  (i, train_loss, train_accuracy, test_loss, test_accuracy))
+                  (i, train_loss, 100*train_accuracy,
+                   test_loss, 100*test_accuracy))
 
         # save para/result as .csv
         if save_QNN: self.save_QNN()
