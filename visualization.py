@@ -16,7 +16,7 @@ def plot_scatter(sample_point, sample_label, ax, color):
     for n in sample_label:
         color_set.append(color[np.argmax(n)])
 
-    ax.scatter(sample_point[:, 0], sample_point[:, 1], s=5, color=color_set)
+    ax.scatter(sample_point[:, 0], sample_point[:, 1], s=3, color=color_set)
 
 
 def plot_confidence_interval_fill(mu_set, cov_set, ax, color):
@@ -100,8 +100,8 @@ def plot_decision_boundary(K, predict, ax, color, x_min, x_max, y_min, y_max):
     :param y_max: maximum y value in the "fig"
     :return:
     """
-    x, y = np.meshgrid(np.linspace(x_min - 0.5, x_max + 0.5, 400),
-                       np.linspace(y_min - 0.5, y_max + 0.5, 400))
+    x, y = np.meshgrid(np.linspace(x_min, x_max, 500),
+                       np.linspace(y_min, y_max, 500))
 
     z = predict(np.c_[np.ravel(x), np.ravel(y)])
     z = np.argmax(z, axis=1).reshape(x.shape)
