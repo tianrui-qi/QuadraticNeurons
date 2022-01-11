@@ -252,8 +252,10 @@ class LNN:
         for l in range(self.L-1, -1, -1):
             if l == self.L-1:   # softmax
                 dz = (a[l + 1] - sample_label) / len(sample_point)
-            else:               # sigmoid
-                dz = da * (1.0 - a[l + 1]) * a[l + 1]
+            else:               # relu
+                dz = da * (a[l + 1] != 0)
+            # else:               # sigmoid
+            #     dz = da * (1.0 - a[l + 1]) * a[l + 1]
             grad['w'+str(l)] = np.dot(a[l].T, dz)   # dw
             grad['b'+str(l)] = np.sum(dz, axis=0)   # db
             da = np.dot(dz, self.para['w'+str(l)].T)
@@ -428,6 +430,32 @@ class LNN:
 
     """ Trainer """
 
+    def result(self, train_point, train_label, test_point, test_label, i):
+        """
+        Store train result and print state
+
+        :param train_point: [ sample_size * D ], np.array
+        :param train_label: [ sample_size * K ], np.array
+        :param test_point: [ sample_size * D ], np.array
+        :param test_label: [ sample_size * K ], np.array
+        :param i: train number/epoch index
+        """
+        # store result
+        train_loss = self.CRE(train_point, train_label)
+        train_accuracy = self.accuracy(train_point, train_label)
+        self.train_loss.append(train_loss)
+        self.train_accuracy.append(train_accuracy)
+
+        test_loss = self.CRE(test_point, test_label)
+        test_accuracy = self.accuracy(test_point, test_label)
+        self.test_loss.append(test_loss)
+        self.test_accuracy.append(test_accuracy)
+
+        # print result
+        print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
+              (i, train_loss, 100 * train_accuracy,
+               test_loss, 100 * test_accuracy))
+
     def train(self, train_point, train_label, test_point, test_label,
               train_number, gradient, optimizer, optimizer_para,
               save_LNN=False, save_result=-1):
@@ -449,25 +477,13 @@ class LNN:
         # train_point = self.normalize(train_point)
         # test_point = self.normalize(test_point)
 
-        for i in range(train_number):
+        self.result(train_point, train_label, test_point, test_label, 0)
+        for i in range(1, train_number+1):
+            self.result(train_point, train_label, test_point, test_label, i)
+
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
-
-            # store result
-            train_loss     = self.CRE(train_point, train_label)
-            train_accuracy = self.accuracy(train_point, train_label)
-            self.train_loss.append(train_loss)
-            self.train_accuracy.append(train_accuracy)
-
-            test_loss     = self.CRE(test_point, test_label)
-            test_accuracy = self.accuracy(test_point, test_label)
-            self.test_loss.append(test_loss)
-            self.test_accuracy.append(test_accuracy)
-
-            # print result
-            print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
-                  (i, train_loss, train_accuracy, test_loss, test_accuracy))
 
         # save para/result as .csv
         if save_LNN: self.save_LNN()

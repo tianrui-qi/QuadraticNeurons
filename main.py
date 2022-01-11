@@ -13,45 +13,50 @@ import matplotlib.patches as mpatches
 ''' Parameters '''
 
 D   = 2         # dimension of sample data point
-K   = 4         # number of Gaussian / classifications
-N_k = 300000    # number of sample for each Gaussian
+K   = 2         # number of Gaussian / classifications
+N_k = 150000    # number of sample for each Gaussian
 
 run_number = 10
 EM_train_number = 100
-NN_train_number = 2000
+NN_train_number = 1000
 
 neuron_num = {
-    0: 5,
-    1: 5,
-    2: K
+    0: 1,
+    1: K
 }
 
 LNN_activation_func = {
-    0: LNN.sigmoid,
-    1: LNN.sigmoid,
-    2: LNN.softmax
+    0: LNN.relu,
+    1: LNN.softmax
 }
 LNN_gradient  = LNN.gradient_bp  # gradient_ng, gradient_bp
 LNN_optimizer = LNN.Adam         # SGD, AdaGrad, RMSprop, Adam
 
 QNN_activation_func = {
-    0: QNN.sigmoid,
-    1: QNN.sigmoid,
-    2: QNN.softmax
+    0: QNN.relu,
+    1: QNN.softmax
 }
 QNN_gradient  = QNN.gradient_bp  # gradient_ng, gradient_bp
 QNN_optimizer = QNN.Adam         # SGD, AdaGrad, RMSprop, Adam
 
 optimizer_para = {
-    "lr":         0.01,    # float, for all optimizer
+    "lr":         0.01,     # float, for all optimizer
     "decay_rate": 0.99,     # float, for optimizer "RMSprop"
     "beta1":      0.9,      # float, for optimizer "Adam"
-    "beta2":      0.999,     # float, for optimizer "Adam"
+    "beta2":      0.999,    # float, for optimizer "Adam"
     "iter":       0
 }
 
 ''' Generate Sample '''
 
+mu_0 = np.array([-3.0, 1.0])  # [ D ]
+cov_0 = np.array([[1.0, 0.5], [0.5, 0.5]])  # [ D * D ]
+mu_1 = np.array([-1.0, -3.0])
+cov_1 = np.array([[0.5, 0.5], [0.5, 1.0]])
+
+mu_set = np.array([mu_0, mu_1])
+cov_set = np.array([cov_0, cov_1])
+"""
 mu_0 = np.array([-3.0, 1.0])  # [ D ]
 cov_0 = np.array([[1.0, 0.5], [0.5, 0.5]])  # [ D * D ]
 mu_1 = np.array([-2.0, -1.0])
@@ -63,6 +68,7 @@ cov_3 = np.array([[0.5, 0.0], [0.0, 2.0]])
 
 mu_set = np.array([mu_0, mu_1, mu_2, mu_3])
 cov_set = np.array([cov_0, cov_1, cov_2, cov_3])
+"""
 
 train_point, train_label, test_point, test_label, \
 sample_point, sample_label, = Gaussian(mu_set, cov_set). \
@@ -70,10 +76,10 @@ sample_point, sample_label, = Gaussian(mu_set, cov_set). \
 
 ''' Visualization Parameters '''
 
-x_max = sample_point[np.argmax(sample_point.T[0])][0]
-x_min = sample_point[np.argmin(sample_point.T[0])][0]
-y_max = sample_point[np.argmax(sample_point.T[1])][1]
-y_min = sample_point[np.argmin(sample_point.T[1])][1]
+x_max = sample_point[np.argmax(sample_point.T[0])][0] + 100
+x_min = sample_point[np.argmin(sample_point.T[0])][0] - 100
+y_max = sample_point[np.argmax(sample_point.T[1])][1] + 100
+y_min = sample_point[np.argmin(sample_point.T[1])][1] - 100
 # plt.rcParams["figure.figsize"] = (10.0, 10.0)
 color = ("blue", "orange", "green", "red")
 legend = [mpatches.Patch(color=color[i], label="Gaussian_{}".format(i))
@@ -86,7 +92,7 @@ def plot_sample():
     plot_confidence_interval_fill(mu_set, cov_set, ax, color)
     plt.legend(handles=legend)
     plt.title("Sample Point", fontsize=14)
-    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.axis([x_min, x_max, y_min, y_max])
     plt.grid()
     fig.show()
     fig.savefig("sample.png")
@@ -99,7 +105,7 @@ def plot_Bayes_DB(bayes):
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
     plt.title("Bayes Inferences Decision Boundary", fontsize=14)
-    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.axis([x_min, x_max, y_min, y_max])
     plt.margins(0, 0)
     plt.grid()
     fig.show()
@@ -114,7 +120,7 @@ def plot_EM_DB(em, i):
     plt.legend(handles=legend)
     plt.title("Expectation Maximization (EM) Decision Boundary",
               fontsize=14)
-    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.axis([x_min, x_max, y_min, y_max])
     plt.grid()
     fig.show()
 
@@ -129,7 +135,7 @@ def plot_LNN_DB(lnn, i):
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
     plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
-    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.axis([x_min, x_max, y_min, y_max])
     plt.grid()
     fig.show()
 
@@ -145,7 +151,7 @@ def plot_QNN_DB(qnn, i):
     plt.legend(handles=legend)
     plt.title("Quadratic Neural Network (QNN) Decision Boundary",
               fontsize=14)
-    plt.axis([x_min - 0.5, x_max + 0.5, y_min - 0.5, y_max + 0.5])
+    plt.axis([x_min, x_max, y_min, y_max])
     plt.grid()
     fig.show()
 
@@ -199,6 +205,7 @@ def average_QNN():
                train_loss/float(run_number), delimiter=",")
     np.savetxt("QNN_result/test_loss_average.csv",
                test_loss/float(run_number), delimiter=",")
+
 
 """
 def plot_EM_accuracy(bayes_accuracy):
@@ -304,28 +311,29 @@ def plot_LNN_accuracy(bayes_accuracy):
     fig.show()
 """
 
+
 if __name__ == "__main__":
     ''' Plot Samples '''
-
+    # """
     plot_sample()
-
+    # """
     ''' Bayes Inferences '''
-
+    # """
     bayes = Bayes(mu_set, cov_set)
     bayes_accuracy = bayes.accuracy(test_point, test_label)
     print("Bayes Inferences Accuracy: %10.7f" % bayes_accuracy)
     plot_Bayes_DB(bayes)
-
+    # """
     ''' A. Expectation Maximization (EM) '''
-
+    # """
     for i in range(run_number):     # test EM for "run_number" time
         em = EM()
         em.train(train_point, train_label, test_point, test_label,
                  EM_train_number, save_result=i)
         plot_EM_DB(em, i)
-
+    # """
     ''' B. Linear Neural Network (LNN) '''
-
+    # """
     for i in range(run_number):     # test LNN for "run_number" time
         lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
         lnn.train(train_point, train_label, test_point, test_label,
@@ -333,9 +341,9 @@ if __name__ == "__main__":
                   save_LNN=True, save_result=i)
         plot_LNN_DB(lnn, i)
     average_LNN()
-
+    # """
     ''' C. Quadratic Neural Network (QNN) '''
-
+    # """
     for i in range(run_number):     # test QNN for "run_number" time
         qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
         qnn.train(train_point, train_label, test_point, test_label,
@@ -343,3 +351,4 @@ if __name__ == "__main__":
                   save_QNN=True, save_result=i)
         plot_QNN_DB(qnn, i)
     average_QNN()
+    # """
