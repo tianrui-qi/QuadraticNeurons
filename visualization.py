@@ -28,61 +28,49 @@ def plot_confidence_interval_fill(mu_set, cov_set, ax, color):
     :param ax: axes object of the 'fig'
     :param color: color set. each Gaussian has one corresponding color.
     """
-    # P Value of Chi-Square [99.73%: 11.8 ; 95.45%: 6.18 ; 68.27%: 2.295]
-    # P Value from Chi-Square Calculator:
-    # https://www.socscistatistics.com/pvalues/chidistribution.aspx
-    confidence = [11.8, 6.18, 2.295]
-
-    # 99.73% corresponding to the initial transparency
-    # 95.45% corresponding to twice of the initial transparency
-    # 68.27% corresponding to three times of the initial transparency
-    initial_alpha = 0.06
+    initial_alpha = [0.18, 0.12, 0.06]
 
     for k in range(len(mu_set)):
-        for i in range(3):
+        for i in range(3, 0, -1):
             # calculate eigenvalue and eigenvector
             eigenvalue, eigenvector = np.linalg.eig(cov_set[k])
             sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
 
             # calculate all the parameter needed for plotting ellipse
-            width = 2 * np.sqrt(confidence[i]) * sqrt_eigenvalue[0]
-            height = 2 * np.sqrt(confidence[i]) * sqrt_eigenvalue[1]
+            width = 2 * i * sqrt_eigenvalue[0]
+            height = 2 * i * sqrt_eigenvalue[1]
             angle = np.rad2deg(np.arccos(eigenvector[0, 0]))
 
             # plot the ellipse
             ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
                              angle=angle, color=color[k])
             ax.add_artist(ell)
-            ell.set_alpha(initial_alpha * (i + 1))  # adjust transparency
+            ell.set_alpha(initial_alpha[i-1])  # adjust transparency
 
 
 def plot_confidence_interval_unfill(mu_set, cov_set, ax, color):
     """
-    Plot the confident interval ellipse (99.73%) of the normal distribution
+    Plot the confident interval ellipse of the normal distribution
 
     :param mu_set: mean set, mean of each Gaussian, [ K * ... ]
     :param cov_set: covariance of each Gaussian, [ K * ... ]
     :param ax: axes object of the 'fig'
     :param color: color set. each Gaussian has one corresponding color.
     """
-    # P Value of Chi-Square [99.73%: 11.8 ; 95.45%: 6.18 ; 68.27%: 2.295]
-    # P Value from Chi-Square Calculator:
-    # https://www.socscistatistics.com/pvalues/chidistribution.aspx
-    confidence = 11.8
     for k in range(len(mu_set)):
         # calculate eigenvalue and eigenvector
         eigenvalue, eigenvector = np.linalg.eig(cov_set[k])
         sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
 
         # calculate all the parameter needed for plotting ellipse
-        width = 2 * np.sqrt(confidence) * sqrt_eigenvalue[0]
-        height = 2 * np.sqrt(confidence) * sqrt_eigenvalue[1]
+        width = 2 * 2 * sqrt_eigenvalue[0]
+        height = 2 * 2 * sqrt_eigenvalue[1]
         angle = np.rad2deg(np.arccos(eigenvector[0, 0]))
 
         # plot the ellipse
         ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
                          angle=angle, fill=False, edgecolor=color[k],
-                         linewidth=2)
+                         linewidth=1)
         ax.add_artist(ell)
 
 

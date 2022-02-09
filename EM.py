@@ -1,32 +1,17 @@
-from Bayes import Bayes
-
-import os
 import numpy as np
 import scipy.stats as st
 
 
 class EM:
     def __init__(self):
-        self.K = None
-        self.N = None
-        self.D = None
+        self.K = None   # number of clustering / Gaussian mixture
+        self.D = None   # Dimension
 
-        self.prio_p  = None     # prior probability, [ K ], np.array
         self.mu_set  = None     # [ K * D ], np.array
         self.cov_set = None     # [ K * D * D ], np.array
 
-        self.post_p  = None     # posterior probability, [ N * K ], np.array
-
-    def initialize_EM(self):
-        """
-        Initialize mu, cov, prior probability, posterior probability.
-        Use before start the first E step (before start iteration).
-        """
-        self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
-        self.mu_set  = np.random.randn(self.K, self.D)      # [ K * D ]
-        self.cov_set = np.array([np.eye(self.D)] * self.K)  # [ K * D * D ]
-
-        self.post_p  = np.zeros((self.N, self.K))           # [ N * K ]
+        self.prio_p = None      # prior probability, [ K ], np.array
+        self.post_p = None      # posterior probability, [ N * K ], np.array
 
     def E_step(self, sample_point):
         """
@@ -44,13 +29,13 @@ class EM:
 
         :param sample_point: [ sample_size * D ], np.array
         """
-        p = np.zeros((self.N, self.K))
+        p = np.zeros((len(sample_point), self.K))   # [ N * K ]
         for k in range(self.K):
             p[:, k] = self.prio_p[k] * \
                       st.multivariate_normal.pdf(sample_point,
                                                  self.mu_set[k],
                                                  self.cov_set[k])
-        sumP = np.sum(p, axis=1)
+        sumP = np.sum(p, axis=1)            # [ N ]
         self.post_p = p / sumP[:, None]     # [ N * K ]
 
     def M_step(self, sample_point):
@@ -61,10 +46,10 @@ class EM:
 
         :param sample_point: [ sample_size * D ], np.array
         """
-        sum_post_p = np.sum(self.post_p, axis=0)    # [ K ]
+        sum_post_p = np.sum(self.post_p, axis=0)        # [ K ]
 
         # update prior probability
-        self.prio_p = sum_post_p / self.N   # [ K ]
+        self.prio_p = sum_post_p / len(sample_point)    # [ K ]
 
         for k in range(self.K):
             # update cov_set
@@ -74,48 +59,63 @@ class EM:
             self.mu_set[k] = above / sum_post_p[k]
 
             # update mu_set
-            X_mu = np.subtract(sample_point, self.mu_set[k])   # [ N * D ]
+            X_mu = np.subtract(sample_point, self.mu_set[k])        # [ N * D ]
             omega_X_mu_k = np.multiply(self.post_p[:, [k]], X_mu)   # [ N * D ]
             self.cov_set[k] = np.dot(np.transpose(omega_X_mu_k), X_mu) / \
                               sum_post_p[k]
 
-    def train(self, train_point, train_label, test_point, test_label,
-              train_number, save_result=-1):
+    def predict(self, sample_point):
+        """
+        By train the EM, we get predict mu, covariance, and prior probability of
+        each cluster / Gaussian mixture. Then, we predict the cluster that each
+        point of input "sample_point" belongs to. This function will return the
+        posterior probability.
+
+        :param sample_point: [ sample_size * D ], np.array
+        :return: posterior probability, [ sample_size * K ], np.array
+        """
+        post_p = np.zeros((len(sample_point), self.K))      # [ N * K ]
+        for k in range(self.K):
+            post_p[:, k] = self.prio_p[k] * \
+                           st.multivariate_normal.pdf(sample_point,
+                                                      self.mu_set[k],
+                                                      self.cov_set[k])
+
+        return post_p / np.sum(post_p, axis=1)[:, None]   # [ N * K ]
+
+    def train(self, train_point, train_label, train_number):
         """
         Repeat E step and M step for "train_number" time.
 
         :param train_point: [ sample_size * D ], np.array
         :param train_label: [ sample_size * K ], np.array
-        :param test_point: [ sample_size * D ], np.array
-        :param test_label: [ sample_size * K ], np.array
         :param train_number: number of iteration
-        :param save_result: save "test_accuracy" in file "EM_result" or not, int
-            if save_result == -1, mean do not save in file
-            if save_result != -1, save in file with name index
-                ie: EM_result/accuracy_{save_EM}.csv
+        :return:
         """
         self.K = len(train_label[0])
-        self.N, self.D = train_point.shape
-        self.initialize_EM()
+        self.D = len(train_point[0])
 
-        test_accuracy = []
+        self.mu_set  = np.random.randn(self.K, self.D)          # [ K * D ]
+        self.cov_set = np.array([np.eye(self.D)] * self.K)      # [ K * D * D ]
 
-        bayes = Bayes(self.mu_set, self.cov_set)    # used to measure accuracy
+        self.prio_p = np.ones((self.K, 1)) / self.K             # [ K ]
+        self.post_p  = np.zeros((len(train_point), self.K))     # [ N * K ]
+
         for i in range(train_number):
-            # train
             self.E_step(train_point)
             self.M_step(train_point)
 
-            # store result
-            bayes.mu_set, bayes.cov_set = self.mu_set, self.cov_set
-            accuracy = bayes.accuracy(test_point, test_label)
-            test_accuracy.append(accuracy)
+        return self.mu_set, self.cov_set, self.prio_p
 
-            # print result
-            print("%4d\tA: %7.5f" % (i, accuracy))
+    def test(self, test_point, test_label):
+        """
+        Test the EM accuracy after train.
 
-        # save result as .csv
-        if save_result != -1:
-            if not os.path.exists('EM_result'): os.mkdir('EM_result')
-            np.savetxt("EM_result/accuracy_{}.csv".format(save_result),
-                       test_accuracy, delimiter=",")
+        :param test_point: [ sample_size * D ], np.array
+        :param test_label: [ sample_size * K ], np.array
+        :return: accuracy, float
+        """
+        y = np.argmax(self.predict(test_point), axis=1)
+        t = np.argmax(test_label, axis=1)
+
+        return np.sum(y == t) / test_point.shape[0]

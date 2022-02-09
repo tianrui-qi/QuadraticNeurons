@@ -1,6 +1,5 @@
 from visualization import *
 from Gaussian import Gaussian
-from Bayes import Bayes
 from EM import EM
 from LNN import LNN
 from QNN import QNN
@@ -10,18 +9,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+
 ''' Parameters '''
 
 D   = 2         # dimension of sample data point
-K   = 2         # number of Gaussian / classifications
-N_k = 150000    # number of sample for each Gaussian
+K   = 4         # number of Gaussian / classifications
+N_k = 300       # number of sample for each Gaussian
 
-run_number = 10
-EM_train_number = 100
-NN_train_number = 1000
+run_number = 30
+EM_train_number = 200
+NN_train_number = 10000
 
 neuron_num = {
-    0: 1,
+    0: 10,
     1: K
 }
 
@@ -47,8 +47,9 @@ optimizer_para = {
     "iter":       0
 }
 
-''' Generate Sample '''
 
+''' Generate Sample '''
+"""
 mu_0 = np.array([-3.0, 1.0])  # [ D ]
 cov_0 = np.array([[1.0, 0.5], [0.5, 0.5]])  # [ D * D ]
 mu_1 = np.array([-1.0, -3.0])
@@ -68,7 +69,7 @@ cov_3 = np.array([[0.5, 0.0], [0.0, 2.0]])
 
 mu_set = np.array([mu_0, mu_1, mu_2, mu_3])
 cov_set = np.array([cov_0, cov_1, cov_2, cov_3])
-"""
+
 
 train_point, train_label, test_point, test_label, \
 sample_point, sample_label, = Gaussian(mu_set, cov_set). \
@@ -76,15 +77,57 @@ sample_point, sample_label, = Gaussian(mu_set, cov_set). \
 
 ''' Visualization Parameters '''
 
-x_max = sample_point[np.argmax(sample_point.T[0])][0] + 100
-x_min = sample_point[np.argmin(sample_point.T[0])][0] - 100
-y_max = sample_point[np.argmax(sample_point.T[1])][1] + 100
-y_min = sample_point[np.argmin(sample_point.T[1])][1] - 100
+edge = 1
+x_max = sample_point[np.argmax(sample_point.T[0])][0] + edge
+x_min = sample_point[np.argmin(sample_point.T[0])][0] - edge
+y_max = sample_point[np.argmax(sample_point.T[1])][1] + edge
+y_min = sample_point[np.argmin(sample_point.T[1])][1] - edge
 # plt.rcParams["figure.figsize"] = (10.0, 10.0)
-color = ("blue", "orange", "green", "red")
+color = ("blue", "orange", "red", "green")
 legend = [mpatches.Patch(color=color[i], label="Gaussian_{}".format(i))
           for i in range(K)]
+# legend.append(mpatches.Patch(color=color[K-1], label="Background"))
 
+
+''' Main '''
+
+def main():
+    # Plot Samples
+    plot_sample()
+    
+    # A. Expectation Maximization (EM)
+    em = EM()
+    accuracy = 0
+    while accuracy < 0.8:
+        em.train(train_point, train_label, EM_train_number)
+        accuracy = em.test(test_point, test_label)
+    print("EM accuracy: %7.5f" % accuracy)
+    plot_EM_DB(em)
+
+    """
+    ''' B. Linear Neural Network (LNN) '''
+
+    for i in range(run_number):     # test LNN for "run_number" time
+        lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
+        lnn.train(train_point, train_label, test_point, test_label,
+                  NN_train_number, LNN_gradient, LNN_optimizer, optimizer_para,
+                  save_LNN=True, save_result=i)
+        plot_LNN_DB(lnn, i)
+    average_LNN()
+
+    ''' C. Quadratic Neural Network (QNN) '''
+    
+    for i in range(run_number):  # test QNN for "run_number" time
+        qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
+        qnn.train(train_point, train_label, test_point, test_label,
+                  NN_train_number, QNN_gradient, QNN_optimizer, optimizer_para,
+                  save_QNN=True, save_result=i)
+        plot_QNN_DB(qnn, i)
+    average_QNN()
+    """
+
+
+''' Help Function For main '''
 
 def plot_sample():
     fig, ax = plt.subplots()
@@ -98,24 +141,10 @@ def plot_sample():
     fig.savefig("sample.png")
 
 
-def plot_Bayes_DB(bayes):
+def plot_EM_DB(em):
     fig, ax = plt.subplots()
     plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, bayes.predict,
-                           ax, color, x_min, x_max, y_min, y_max)
-    plt.legend(handles=legend)
-    plt.title("Bayes Inferences Decision Boundary", fontsize=14)
-    plt.axis([x_min, x_max, y_min, y_max])
-    plt.margins(0, 0)
-    plt.grid()
-    fig.show()
-    fig.savefig("Bayes_DB.png")
-
-
-def plot_EM_DB(em, i):
-    fig, ax = plt.subplots()
-    plot_confidence_interval_unfill(mu_set, cov_set, ax, color)
-    plot_decision_boundary(K, Bayes(em.mu_set, em.cov_set).predict,
+    plot_decision_boundary(K, em.predict,
                            ax, color, x_min, x_max, y_min, y_max)
     plt.legend(handles=legend)
     plt.title("Expectation Maximization (EM) Decision Boundary",
@@ -124,8 +153,7 @@ def plot_EM_DB(em, i):
     plt.grid()
     fig.show()
 
-    if not os.path.exists('EM_result'): os.mkdir('EM_result')
-    fig.savefig("EM_result/DB_{}.png".format(i))
+    fig.savefig("EM_DB.png")
 
 
 def plot_LNN_DB(lnn, i):
@@ -160,10 +188,10 @@ def plot_QNN_DB(qnn, i):
 
 
 def average_LNN():
-    train_accuracy = np.zeros([NN_train_number])
-    test_accuracy  = np.zeros([NN_train_number])
-    train_loss     = np.zeros([NN_train_number])
-    test_loss      = np.zeros([NN_train_number])
+    train_accuracy = np.zeros([NN_train_number+1])
+    test_accuracy  = np.zeros([NN_train_number+1])
+    train_loss     = np.zeros([NN_train_number+1])
+    test_loss      = np.zeros([NN_train_number+1])
     for i in range(run_number):
         train_accuracy += np.loadtxt("LNN_result/train_accuracy_{}.csv"
                                      .format(i), delimiter=",")
@@ -184,10 +212,10 @@ def average_LNN():
 
 
 def average_QNN():
-    train_accuracy = np.zeros([NN_train_number])
-    test_accuracy  = np.zeros([NN_train_number])
-    train_loss     = np.zeros([NN_train_number])
-    test_loss      = np.zeros([NN_train_number])
+    train_accuracy = np.zeros([NN_train_number+1])
+    test_accuracy  = np.zeros([NN_train_number+1])
+    train_loss     = np.zeros([NN_train_number+1])
+    test_loss      = np.zeros([NN_train_number+1])
     for i in range(run_number):
         train_accuracy += np.loadtxt("QNN_result/train_accuracy_{}.csv"
                                      .format(i), delimiter=",")
@@ -207,148 +235,5 @@ def average_QNN():
                test_loss/float(run_number), delimiter=",")
 
 
-"""
-def plot_EM_accuracy(bayes_accuracy):
-    if not os.path.exists('EM_result'): return
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(EM_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("EM_result/accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Expectation Maximization (EM) Accuracy", fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy"])
-    plt.ylim(0, 1)
-    plt.grid()
-    fig.show()
-    fig.savefig("EM_result/accuracy.png")
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(EM_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("EM_result/accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Expectation Maximization (EM) Accuracy (detail)", fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy"])
-    plt.ylim(bayes_accuracy - 0.015, bayes_accuracy + 0.005)
-    plt.grid()
-    fig.show()
-    fig.savefig("EM_result/accuracy_detail.png")
-
-
-def plot_LNN_accuracy(bayes_accuracy):
-    if not os.path.exists('LNN_result'): return
-    # train accuracy
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(NN_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("LNN_result/train_accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Linear Neural Network (LNN) Train Accuracy", fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy", "Train Accuracy"])
-    plt.ylim(0, 1)
-    plt.grid()
-    fig.show()
-
-    # train accuracy (detail)
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(NN_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("LNN_result/train_accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Linear Neural Network (LNN) Train Accuracy (detail)",
-              fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy", "Train Accuracy"])
-    plt.ylim(bayes_accuracy - 0.015, bayes_accuracy + 0.005)
-    plt.grid()
-    fig.show()
-
-    # test accuracy
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(NN_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("LNN_result/test_accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Linear Neural Network (LNN) Test Accuracy", fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy", "Test Accuracy"])
-    plt.ylim(0, 1)
-    plt.grid()
-    fig.show()
-
-    # test accuracy (detail)
-
-    fig, ax = plt.subplots()
-    plt.plot(bayes_accuracy + np.zeros(NN_train_number),
-             color="red", linewidth=3)
-    for i in range(run_number):
-        ax.plot(np.loadtxt("LNN_result/test_accuracy_{}.csv".format(i),
-                           delimiter=","), linewidth=1)
-    plt.title("Linear Neural Network (LNN) Test Accuracy (detail)",
-              fontsize=14)
-    plt.xlabel("Iteration")
-    plt.ylabel("Accuracy")
-    plt.legend(["Bayes Accuracy", "Test Accuracy"])
-    plt.ylim(bayes_accuracy - 0.015, bayes_accuracy + 0.005)
-    plt.grid()
-    fig.show()
-"""
-
-
 if __name__ == "__main__":
-    ''' Plot Samples '''
-    # """
-    plot_sample()
-    # """
-    ''' Bayes Inferences '''
-    # """
-    bayes = Bayes(mu_set, cov_set)
-    bayes_accuracy = bayes.accuracy(test_point, test_label)
-    print("Bayes Inferences Accuracy: %10.7f" % bayes_accuracy)
-    plot_Bayes_DB(bayes)
-    # """
-    ''' A. Expectation Maximization (EM) '''
-    # """
-    for i in range(run_number):     # test EM for "run_number" time
-        em = EM()
-        em.train(train_point, train_label, test_point, test_label,
-                 EM_train_number, save_result=i)
-        plot_EM_DB(em, i)
-    # """
-    ''' B. Linear Neural Network (LNN) '''
-    # """
-    for i in range(run_number):     # test LNN for "run_number" time
-        lnn = LNN(D, neuron_num, LNN_activation_func, load_LNN=False)
-        lnn.train(train_point, train_label, test_point, test_label,
-                  NN_train_number, LNN_gradient, LNN_optimizer, optimizer_para,
-                  save_LNN=True, save_result=i)
-        plot_LNN_DB(lnn, i)
-    average_LNN()
-    # """
-    ''' C. Quadratic Neural Network (QNN) '''
-    # """
-    for i in range(run_number):     # test QNN for "run_number" time
-        qnn = QNN(D, neuron_num, QNN_activation_func, load_QNN=False)
-        qnn.train(train_point, train_label, test_point, test_label,
-                  NN_train_number, QNN_gradient, QNN_optimizer, optimizer_para,
-                  save_QNN=True, save_result=i)
-        plot_QNN_DB(qnn, i)
-    average_QNN()
-    # """
+    main()
