@@ -250,12 +250,13 @@ class LNN:
         # da0 <- dw0,db0 <- dz0 <- da1 <- dw1,db1 <- dz1 <- da2
         da = 0
         for l in range(self.L-1, -1, -1):
-            if l == self.L-1:   # softmax
+            if self.activation_func[l] == self.softmax:     # softmax with loss
                 dz = (a[l + 1] - sample_label) / len(sample_point)
-            else:               # relu
+            elif self.activation_func[l] == self.relu:      # relu
                 dz = da * (a[l + 1] != 0)
-            # else:               # sigmoid
-            #     dz = da * (1.0 - a[l + 1]) * a[l + 1]
+            else:                                           # sigmoid
+                dz = da * (1.0 - a[l + 1]) * a[l + 1]
+
             grad['w'+str(l)] = np.dot(a[l].T, dz)   # dw
             grad['b'+str(l)] = np.sum(dz, axis=0)   # db
             da = np.dot(dz, self.para['w'+str(l)].T)

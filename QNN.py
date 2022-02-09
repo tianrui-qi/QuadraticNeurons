@@ -102,7 +102,6 @@ class QNN:
             zb = np.dot(a**2, self.para['wb'+str(l)]) + self.para['bb'+str(l)]
             z = np.multiply(zr, zg) + zb
             a = self.activation_func[l](z)
-
         return a
 
     def accuracy(self, sample_point, sample_label):
@@ -235,12 +234,12 @@ class QNN:
         # backward
         da = 0
         for l in range(self.L-1, -1, -1):
-            if l == self.L-1:   # softmax
+            if self.activation_func[l] == self.softmax:     # softmax with loss
                 dz = (a[l + 1] - sample_label) / len(sample_point)
-            else:  # relu
+            elif self.activation_func[l] == self.relu:      # relu
                 dz = da * (a[l + 1] != 0)
-            # else:               # sigmoid
-            #     dz = da * (1.0 - a[l + 1]) * a[l + 1]
+            else:                                           # sigmoid
+                dz = da * (1.0 - a[l + 1]) * a[l + 1]
 
             dzr = dz * zg[l]
             dzg = dz * zr[l]

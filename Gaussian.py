@@ -1,6 +1,7 @@
 import os
 import random
 import numpy as np
+import scipy.stats as st
 
 
 class Gaussian:
@@ -32,7 +33,7 @@ class Gaussian:
         return np.random.multivariate_normal(self.mu_set[k], self.cov_set[k],
                                              N_k)
 
-    def set_label(self, k):
+    def set_label(self, k, point):
         """
         Generate a 1*k matrix that standard for the label of the Gaussian
 
@@ -43,10 +44,21 @@ class Gaussian:
             self.label = [0, 0, 0, 1]
 
         :param k: label index of this Gaussian
+        :param point: the point we want to label
         :return: a 1*k matrix that standard for the label of the Gaussian
         """
-        sample_label = np.zeros(self.K)
-        sample_label[k] = 1
+        sample_label = np.zeros([len(point), self.K])
+
+        probability = st.multivariate_normal.pdf(
+            point, self.mu_set[k], self.cov_set[k])
+        for n in range(len(point)):
+            sample_label[n][k] = 1
+            """
+            if probability[n] < 0.0455:
+                sample_label[n][self.K] = 1
+            else:
+                sample_label[n][k] = 1
+            """
         return sample_label
 
     def save_sample(self):
@@ -93,9 +105,9 @@ class Gaussian:
 
         for k in range(self.K):
             point = self.set_point(k, N_k)
-            label = self.set_label(k)
+            label = self.set_label(k, point)
             for n in range(N_k):
-                sample_set.append((point[n], label))
+                sample_set.append((point[n], label[n]))
         random.shuffle(sample_set)
 
         self.sample_point = np.array( [x[0] for x in sample_set] )
