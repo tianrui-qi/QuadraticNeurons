@@ -1,5 +1,98 @@
+import os
 import numpy as np
+import matplotlib.pyplot as plt
 import matplotlib.patches as mp
+
+
+class Visual:
+    def __init__(self, sample_point, sample_label, mu_set, cov_set, bg=False):
+        self.K = len(mu_set)
+        self.D = len(sample_point[0])
+
+        self.sample_point = sample_point
+        self.sample_label = sample_label
+        self.mu_set = mu_set
+        self.cov_set = cov_set
+
+        self.color = ("blue", "orange", "red", "green", "cyan", "magenta")
+
+        if bg:
+            self.legend = [mp.Patch(color=self.color[i],
+                                    label="Gaussian_{}".format(i+1))
+                           for i in range(self.K - 1)]
+            self.legend.append(mp.Patch(color=self.color[self.K - 1],
+                                        label="Background"))
+        else:
+            self.legend = [mp.Patch(color=self.color[i],
+                                    label="Gaussian_{}".format(i+1))
+                           for i in range(self.K)]
+
+
+    def plot_sample(self):
+        ax = None
+        if self.D == 2:
+            fig, ax = plt.subplots()
+            # plot_confidence_interval_fill(mu_set, cov_set, ax, color)
+        elif self.D == 3:
+            ax = plt.subplot(111, projection='3d')
+
+        if ax is None: return
+        plot_scatter(self.sample_point, self.sample_label, ax, self.color)
+        plt.legend(handles=self.legend)
+        # plt.title("Sample Point", fontsize=14)
+        plt.grid()
+        plt.show()
+        plt.savefig("sample.png")
+
+    def plot_EM_DB(self, em):
+        if self.D != 2: return
+
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(self.mu_set, self.cov_set,
+                                        ax, self.color)
+        plot_decision_boundary(self.K, em.E_step,
+                               ax, self.color, -10, 10, -10, 10)
+        plt.legend(handles=self.legend)
+        plt.title("Expectation Maximization (EM) Decision Boundary",
+                  fontsize=14)
+        plt.axis([-10, 10, -10, 10])
+        plt.grid()
+        fig.show()
+        fig.savefig("EM_DB.png")
+
+    def plot_LNN_DB(self, lnn, i):
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(self.mu_set, self.cov_set,
+                                        ax, self.color)
+        plot_decision_boundary(self.K, lnn.predict,
+                               ax, self.color, -10, 10, -10, 10)
+        plt.legend(handles=self.legend)
+        plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
+        plt.axis([-10, 10, -10, 10])
+        plt.grid()
+        fig.show()
+
+        if not os.path.exists('LNN_result'): os.mkdir('LNN_result')
+        fig.savefig("LNN_result/DB_{}.png".format(i))
+
+    def plot_QNN_DB(self, qnn, i):
+        fig, ax = plt.subplots()
+        plot_confidence_interval_unfill(self.mu_set, self.cov_set,
+                                        ax, self.color)
+        plot_decision_boundary(self.K, qnn.predict,
+                               ax, self.color, -10, 10, -10, 10)
+        plt.legend(handles=self.legend)
+        plt.title("Quadratic Neural Network (QNN) Decision Boundary",
+                  fontsize=14)
+        plt.axis([-10, 10, -10, 10])
+        plt.grid()
+        fig.show()
+
+        if not os.path.exists('QNN_result'): os.mkdir('QNN_result')
+        fig.savefig("QNN_result/DB_{}.png".format(i))
+
+
+""" Help function for class 'Visual' """
 
 
 def plot_scatter(sample_point, sample_label, ax, color):
@@ -16,7 +109,11 @@ def plot_scatter(sample_point, sample_label, ax, color):
     for n in sample_label:
         color_set.append(color[np.argmax(n)])
 
-    ax.scatter(sample_point[:, 0], sample_point[:, 1], s=3, color=color_set)
+    if len(sample_point[0]) == 2:
+        ax.scatter(sample_point[:, 0], sample_point[:, 1], s=2, color=color_set)
+    elif len(sample_point[0]) == 3:
+        ax.scatter(sample_point[:, 0], sample_point[:, 1], sample_point[:, 2],
+                   s=2, color=color_set)
 
 
 def plot_confidence_interval_fill(mu_set, cov_set, ax, color):

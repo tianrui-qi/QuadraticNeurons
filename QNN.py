@@ -61,10 +61,12 @@ class QNN:
 
             # sd for initialize weight 'w', parameter of network
             sd = 0.01
+            """
             if self.activation_func[l] == self.sigmoid:
                 sd = np.sqrt(1 / node_from)
             elif self.activation_func[l] == self.relu:
                 sd = np.sqrt(2 / node_from)
+            """
 
             # initialize parameters
             for j in ('r', 'g', 'b'):
@@ -261,7 +263,7 @@ class QNN:
 
         return grad
 
-    """ Four Optimizers """
+    """ Four Updating Methods """
 
     def SGD(self, grad, para):
         """
@@ -363,9 +365,7 @@ class QNN:
         scale = float(max_val - min_val) / (max_x - min_x)
         shift = float((max_val + min_val) - (max_x + min_x)) / 2
 
-        sample_point = (sample_point + shift) * scale
-
-        return sample_point     # [ sample_size * D ], np.array
+        return (sample_point + shift) * scale  # [ sample_size * D ], np.array
 
     def save_result(self, save_result):
         """
@@ -474,9 +474,6 @@ class QNN:
         :param save_QNN: save parameters in file "save" or not, bool
         :param save_result: save result in file "result" or not, int
         """
-        # train_point = self.normalize(train_point)
-        # test_point = self.normalize(test_point)
-
         self.result(train_point, train_label, test_point, test_label, 0)
         for i in range(1, train_number+1):
             self.result(train_point, train_label, test_point, test_label, i)
