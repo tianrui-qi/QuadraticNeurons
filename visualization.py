@@ -15,17 +15,20 @@ class Visual:
         self.cov_set = cov_set
 
         self.color = ("blue", "orange", "red", "green", "cyan", "magenta")
-
+        self.legend = [mp.Patch(color=self.color[i],
+                                label="Gaussian_{}".format(i + 1))
+                       for i in range(self.K)]
         if bg:
-            self.legend = [mp.Patch(color=self.color[i],
-                                    label="Gaussian_{}".format(i+1))
-                           for i in range(self.K - 1)]
-            self.legend.append(mp.Patch(color=self.color[self.K - 1],
+            self.legend.append(mp.Patch(color=self.color[self.K],
                                         label="Background"))
-        else:
-            self.legend = [mp.Patch(color=self.color[i],
-                                    label="Gaussian_{}".format(i+1))
-                           for i in range(self.K)]
+
+        self.bg = bg
+
+        edge = 1
+        self.x_max = sample_point[np.argmax(sample_point.T[0])][0] + edge
+        self.x_min = sample_point[np.argmin(sample_point.T[0])][0] - edge
+        self.y_max = sample_point[np.argmax(sample_point.T[1])][1] + edge
+        self.y_min = sample_point[np.argmin(sample_point.T[1])][1] - edge
 
 
     def plot_sample(self):
@@ -40,6 +43,7 @@ class Visual:
         plot_scatter(self.sample_point, self.sample_label, ax, self.color)
         plt.legend(handles=self.legend)
         # plt.title("Sample Point", fontsize=14)
+        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         plt.show()
         plt.savefig("sample.png")
@@ -50,25 +54,27 @@ class Visual:
         fig, ax = plt.subplots()
         plot_confidence_interval_unfill(self.mu_set, self.cov_set,
                                         ax, self.color)
-        plot_decision_boundary(self.K, em.E_step,
-                               ax, self.color, -10, 10, -10, 10)
+        plot_decision_boundary(self.K + 1 * self.bg, em.E_step, ax, self.color,
+                               self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
         plt.title("Expectation Maximization (EM) Decision Boundary",
                   fontsize=14)
-        plt.axis([-10, 10, -10, 10])
+        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
         fig.savefig("EM_DB.png")
 
     def plot_LNN_DB(self, lnn, i):
+        if self.D != 2: return
+
         fig, ax = plt.subplots()
         plot_confidence_interval_unfill(self.mu_set, self.cov_set,
                                         ax, self.color)
-        plot_decision_boundary(self.K, lnn.predict,
-                               ax, self.color, -10, 10, -10, 10)
+        plot_decision_boundary(self.K + 1 * self.bg, lnn.predict, ax, self.color,
+                               self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
         plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
-        plt.axis([-10, 10, -10, 10])
+        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
 
@@ -76,15 +82,17 @@ class Visual:
         fig.savefig("LNN_result/DB_{}.png".format(i))
 
     def plot_QNN_DB(self, qnn, i):
+        if self.D != 2: return
+
         fig, ax = plt.subplots()
         plot_confidence_interval_unfill(self.mu_set, self.cov_set,
                                         ax, self.color)
-        plot_decision_boundary(self.K, qnn.predict,
-                               ax, self.color, -10, 10, -10, 10)
+        plot_decision_boundary(self.K + 1 * self.bg, qnn.predict, ax, self.color,
+                               self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
         plt.title("Quadratic Neural Network (QNN) Decision Boundary",
                   fontsize=14)
-        plt.axis([-10, 10, -10, 10])
+        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
 
@@ -134,9 +142,9 @@ def plot_confidence_interval_fill(mu_set, cov_set, ax, color):
             sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
 
             # calculate all the parameter needed for plotting ellipse
-            width = 2 * i * sqrt_eigenvalue[0]
+            width  = 2 * i * sqrt_eigenvalue[0]
             height = 2 * i * sqrt_eigenvalue[1]
-            angle = np.rad2deg(np.arccos(eigenvector[0, 0]))
+            angle  = np.rad2deg(np.arccos(eigenvector[0, 0]))
 
             # plot the ellipse
             ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
@@ -160,9 +168,9 @@ def plot_confidence_interval_unfill(mu_set, cov_set, ax, color):
         sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
 
         # calculate all the parameter needed for plotting ellipse
-        width = 2 * 2 * sqrt_eigenvalue[0]
+        width  = 2 * 2 * sqrt_eigenvalue[0]
         height = 2 * 2 * sqrt_eigenvalue[1]
-        angle = np.rad2deg(np.arccos(eigenvector[0, 0]))
+        angle  = np.rad2deg(np.arccos(eigenvector[0, 0]))
 
         # plot the ellipse
         ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,

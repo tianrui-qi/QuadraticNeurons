@@ -477,7 +477,8 @@ class LNN:
         """
         self.result(train_point, train_label, test_point, test_label, 0)
         for i in range(1, train_number+1):
-            self.result(train_point, train_label, test_point, test_label, i)
+            if i % 2000 == 0:
+                self.result(train_point, train_label, test_point, test_label, i)
 
             # train
             grad = gradient(self, train_point, train_label)

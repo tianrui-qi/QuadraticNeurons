@@ -5,10 +5,12 @@ import scipy.stats as st
 
 
 class Gaussian:
-    def __init__(self, mu_set, cov_set):
+    def __init__(self, mu_set, cov_set, bg=False):
         """
         :param mu_set: mean of each Gaussian, [ K * D ]
         :param cov_set: covariance of each Gaussian, [ K * D * D ]
+        :param bg: add a new cluster "Background" (2-sigma) or not, use when
+                    set label of each point.
         """
         self.K = len(mu_set)
 
@@ -21,6 +23,8 @@ class Gaussian:
         self.train_label  = None
         self.test_point   = None
         self.test_label   = None
+
+        self.bg = bg
 
     def set_point(self, k, N_k):
         """
@@ -47,18 +51,20 @@ class Gaussian:
         :param point: the point we want to label
         :return: a 1*k matrix that standard for the label of the Gaussian
         """
-        sample_label = np.zeros([len(point), self.K])
-
-        probability = st.multivariate_normal.pdf(
-            point, self.mu_set[k], self.cov_set[k])
-        for n in range(len(point)):
-            sample_label[n][k] = 1
-            """
-            if probability[n] < 0.0455:
-                sample_label[n][self.K] = 1
-            else:
+        if self.bg:
+            sample_label = np.zeros([len(point), self.K+1])
+            probability = st.multivariate_normal.pdf(
+                point, self.mu_set[k], self.cov_set[k])
+            for n in range(len(point)):
+                if probability[n] < 0.0455:     # 0.0027, 0.0455
+                    sample_label[n][self.K] = 1
+                else:
+                    sample_label[n][k] = 1
+        else:
+            sample_label = np.zeros([len(point), self.K])
+            for n in range(len(point)):
                 sample_label[n][k] = 1
-            """
+
         return sample_label
 
     def save_sample(self):
