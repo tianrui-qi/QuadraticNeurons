@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import scipy.stats as st
 
@@ -5,24 +6,9 @@ import scipy.stats as st
 class EM:
     """
     Example:
-
         em = EM(K)
         em.train(train_point, EM_train_number)
         print("EM accuracy: %7.5f" % em.test(test_point, test_label))
-
-    Notes that code above may not get good accuracy since the "test_label" is
-    ordered by cluster. However, the order that EM get is shuffled since we
-    initialize mu of each Gaussian by random.
-    One way to solve this problem is:
-
-        em = EM(K)
-        while em.test(test_point, test_label) < 0.8:
-            em.train(train_point, EM_train_number)
-        print("EM accuracy: %7.5f" % em.test(test_point, test_label))
-
-    If the train result is not good, means the order of result cluster is not
-    right. Then, use "em.train" to re-initialize mu and re-train. The tol 0.8
-    can be adjusted according to the problem.
     """
 
     def __init__(self, K):
@@ -118,6 +104,11 @@ class EM:
     def test(self, test_point, test_label):
         """
         Test the accuracy using the current EM.
+        Notes that we use a permutation since the supervised label "t" is
+        ordered by cluster. However, the order that EM get is shuffled since we
+        initialize mu of each Gaussian by random. If the accuracy is not
+        good, means the order of result cluster is not right. So we use a
+        permutation of all kinds order to find the right one.
 
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
@@ -125,7 +116,11 @@ class EM:
         """
         if self.prio_p is None: return 0    # if EM has not been trained
 
-        y = np.argmax(self.E_step(test_point), axis=1)
+        accuracy = 0.0
         t = np.argmax(test_label, axis=1)
+        for j in list(itertools.permutations([i for i in range(self.K)],
+                                             self.K)):
+            y = np.argmax(self.E_step(test_point)[:, j], axis=1)
+            accuracy = np.maximum(accuracy, np.sum(y == t) / len(test_point))
 
-        return np.sum(y == t) / len(test_point)
+        return accuracy
