@@ -5,17 +5,18 @@ import scipy.stats as st
 
 
 class Gaussian:
-    def __init__(self, mu_set, cov_set, bg=False):
+    def __init__(self, mu_set, cov_set):
         """
         :param mu_set: mean of each Gaussian, [ K * D ]
         :param cov_set: covariance of each Gaussian, [ K * D * D ]
-        :param bg: add a new cluster "Background" (2-sigma) or not, use when
-                    set label of each point.
         """
         self.K = len(mu_set)
 
         self.mu_set  = mu_set
         self.cov_set = cov_set
+        self.N_k = None
+
+        self.bg = None
 
         self.sample_point = None
         self.sample_label = None
@@ -23,8 +24,6 @@ class Gaussian:
         self.train_label  = None
         self.test_point   = None
         self.test_label   = None
-
-        self.bg = bg
 
     def set_point(self, k, N_k):
         """
@@ -52,12 +51,16 @@ class Gaussian:
         :return: a 1*k matrix that standard for the label of the Gaussian
         """
         if self.bg:
+            if len(self.N_k) == self.K: self.N_k = np.append(self.N_k, 0)
+
             sample_label = np.zeros([len(point), self.K+1])
             probability = st.multivariate_normal.pdf(
                 point, self.mu_set[k], self.cov_set[k])
             for n in range(len(point)):
                 if probability[n] < 0.0455:     # 0.0027, 0.0455
                     sample_label[n][self.K] = 1
+                    self.N_k[self.K] += 1
+                    self.N_k[k] -= 1
                 else:
                     sample_label[n][k] = 1
         else:
@@ -90,7 +93,7 @@ class Gaussian:
         self.test_point   = np.loadtxt("sample/test_point.csv",   delimiter=",")
         self.test_label   = np.loadtxt("sample/test_label.csv",   delimiter=",")
 
-    def generate_sample(self, N_k, load_sample=False, save_sample=False):
+    def generate_sample(self, N_k, bg=False):
         """
         If sample already been created ("sample" file exist), the function will
         load from the file directly. If not, it will creat sample point and
@@ -98,21 +101,24 @@ class Gaussian:
         same time, and split the sample point into two part: train and test.
         Then store them in the file "sample" (if "save_sample"=True).
 
-        :param N_k: number of sample for each Gaussian
-        :param load_sample: load sample from file "sample" or creat new
-        :param save_sample: save sample in file "sample" or not
+        :param N_k: number of sample for each Gaussian, [ K ], np.array
+        :param bg: add a new cluster "Background" (2-sigma) or not, use when
+                    set label of each point.
         :return: sample, train and test point and label
             point: [ sample_size * D ], np.array
             label: [ sample_size * K ], np.array
         """
+        self.N_k = N_k
+        self.bg = bg
+
         # 1. get sample point and label
 
         sample_set = []
 
         for k in range(self.K):
-            point = self.set_point(k, N_k)
+            point = self.set_point(k, self.N_k[k])
             label = self.set_label(k, point)
-            for n in range(N_k):
+            for n in range(self.N_k[k]):
                 sample_set.append((point[n], label[n]))
         random.shuffle(sample_set)
 
@@ -121,27 +127,15 @@ class Gaussian:
 
         # 2. split point and label into train and test
 
-        train_point, train_label = [], []
-        test_point, test_label = [], []
-
         N = len(self.sample_point)  # N = K * N_k
         N_test = int(N / 3)
-        for i in range(N_test):
-            test_point.append(self.sample_point[i])
-            test_label.append(self.sample_label[i])
-        for i in range(N_test, N):
-            train_point.append(self.sample_point[i])
-            train_label.append(self.sample_label[i])
+        self.test_point = np.array([self.sample_point[i] for i in range(N_test)])
+        self.test_label = np.array([self.sample_label[i] for i in range(N_test)])
 
-        self.train_point = np.array(train_point)
-        self.train_label = np.array(train_label)
-        self.test_point = np.array(test_point)
-        self.test_label = np.array(test_label)
-
-        # 3. load and save
-
-        if load_sample and os.path.exists('sample'): self.load_sample()
-        if save_sample: self.save_sample()
+        self.train_point = np.array([self.sample_point[i]
+                                     for i in range(N_test, N)])
+        self.train_label = np.array([self.sample_label[i]
+                                     for i in range(N_test, N)])
 
         return self.train_point, self.train_label, \
                self.test_point, self.test_label, \

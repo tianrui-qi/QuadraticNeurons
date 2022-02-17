@@ -5,9 +5,13 @@ import scipy.stats as st
 
 class EM:
     """
+    With the given number of clusters, K, do the EM process with train point to
+    get each Gaussian's parameters including mean, covariance, and prior
+    probability.
+
     Example:
         em = EM(K)
-        em.train(train_point, EM_train_number)
+        em.train(train_point, train_label, EM_train_number)
         print("EM accuracy: %7.5f" % em.test(test_point, test_label))
     """
 
@@ -21,8 +25,6 @@ class EM:
         self.mu_set  = None     # [ K * D ]
         self.cov_set = None     # [ K * D * D ]
         self.prio_p  = None     # [ K ]
-
-    """ Trainer """
 
     def E_step(self, sample_point):
         """
@@ -81,11 +83,28 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, train_number):
+    def train(self, train_point, train_label, train_number):
         """
         Repeat E step and M step for "train_number" time.
 
+        Note that the EM is unsupervised algorithm, but the input has a
+        "train_label," which is the supervising label.
+            That's because the goal of our EM is not just to find the correct
+        parameters, but in correct order. In the "test" step, we estimate the
+        accuracy according to the "test_label." However, although EM got the
+        parameters right, but shuffled since we initialize mu of each Gaussian
+        by random. We way got a bad accuracy result because the order of the
+        parameters.
+            Thus, after train, we get the order that can maximize the accuracy,
+        and then adjust the order of "mu_set," "cov_set," "prio_p" according to
+        that order. To get accuracy, we need supervising label, and that's why
+        the input of the EM has supervising label.
+            If the goal is just to find all the parameters, we can direct
+        train and result "mu_set," "cov_set," "prio_p." And do not need the
+        input supervising label.
+
         :param train_point: [ sample_size * D ], np.array
+        :param train_label: [ sample_size * K ], np.array
         :param train_number: number of iteration
         :return self.mu_set: [ K * D ], np.array
         :return self.cov_set: [ K * D * D ], np.array
@@ -96,31 +115,41 @@ class EM:
         self.cov_set = np.array([np.eye(self.D)] * self.K)  # [ K * D * D ]
         self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
 
+        # train
         for i in range(train_number):
             self.M_step(train_point, self.E_step(train_point))
+
+        # get the correct order
+        order = []  # [ K ], store the correct order
+        accuracy = 0
+        t = np.argmax(train_label, axis=1)
+        for j in list(itertools.permutations([i for i in range(self.K)],
+                                             self.K)):
+            y = np.argmax(self.E_step(train_point)[:, j], axis=1)
+            current_accuracy = np.sum(y == t) / len(train_label)
+            if current_accuracy > accuracy:
+                order = j
+                accuracy = current_accuracy
+
+        # change the order of mu, cov, prior probability according to the order
+        for data in (self.mu_set, self.cov_set, self.prio_p):
+            temp = np.copy(data)    # store the old data
+            for i in range(self.K):
+                data[i] = temp[order[i]]
 
         return self.mu_set, self.cov_set, self.prio_p
 
     def test(self, test_point, test_label):
         """
         Test the accuracy using the current EM.
-        Notes that we use a permutation since the supervised label "t" is
-        ordered by cluster. However, the order that EM get is shuffled since we
-        initialize mu of each Gaussian by random. If the accuracy is not
-        good, means the order of result cluster is not right. So we use a
-        permutation of all kinds order to find the right one.
 
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
         :return: accuracy, float
         """
-        if self.prio_p is None: return 0    # if EM has not been trained
+        if self.prio_p is None: return 0    # means EM has not been trained
 
-        accuracy = 0.0
         t = np.argmax(test_label, axis=1)
-        for j in list(itertools.permutations([i for i in range(self.K)],
-                                             self.K)):
-            y = np.argmax(self.E_step(test_point)[:, j], axis=1)
-            accuracy = np.maximum(accuracy, np.sum(y == t) / len(test_point))
+        y = np.argmax(self.E_step(test_point), axis=1)
 
-        return accuracy
+        return np.sum(y == t) / len(test_point)
