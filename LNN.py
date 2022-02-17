@@ -61,7 +61,7 @@ class LNN:
 
             # sd for initialize weight 'w', parameter of network
             sd = 0.01
-            """
+            """ # He initialization
             if self.activation_func[l] == self.sigmoid:
                 sd = np.sqrt(1 / node_from)
             elif self.activation_func[l] == self.relu:
@@ -369,46 +369,6 @@ class LNN:
 
         return (sample_point + shift) * scale  # [ sample_size * D ], np.array
 
-    def save_result(self, save_result):
-        """
-        Save result in the file "LNN_result." Notes that the result will be
-        saved only when variable of "train", "save_result" is not -1.
-
-        :param save_result: save all result in file "LNN_result" or not, int
-            if save_result == -1, mean do not save in file
-            if save_result != -1, save in file with name index
-                ie: result/LNN_test_accuracy_{save_EM}.csv
-        """
-        if not os.path.exists('LNN_result'): os.mkdir('LNN_result')
-        np.savetxt("LNN_result/train_loss_{}.csv".format(save_result),
-                   self.train_loss, delimiter=",")
-        np.savetxt("LNN_result/test_loss_{}.csv".format(save_result),
-                   self.test_loss, delimiter=",")
-        np.savetxt("LNN_result/train_accuracy_{}.csv".format(save_result),
-                   self.train_accuracy, delimiter=",")
-        np.savetxt("LNN_result/test_accuracy_{}.csv".format(save_result),
-                   self.test_accuracy, delimiter=",")
-
-    def save_LNN(self):
-        """
-        Save all the parameters of the network in the file "save/LNN_". Notes
-        that the network will be saved only when variable of "train", "save_LNN"
-        is True.
-        """
-        if not os.path.exists('save'): os.mkdir('save')
-        for key in self.para.keys():
-            np.savetxt("save/LNN_para_{}.csv".format(key), self.para[key],
-                       delimiter=",")
-        for key in self.h.keys():
-            np.savetxt("save/LNN_h_{}.csv".format(key), self.h[key],
-                       delimiter=",")
-        for key in self.m.keys():
-            np.savetxt("save/LNN_m_{}.csv".format(key), self.m[key],
-                       delimiter=",")
-        for key in self.v.keys():
-            np.savetxt("save/LNN_v_{}.csv".format(key), self.v[key],
-                       delimiter=",")
-
     def load_LNN(self):
         """
         Load all the parameters of the network from the file "save/LNN_".
@@ -458,8 +418,8 @@ class LNN:
                test_loss, 100 * test_accuracy))
 
     def train(self, train_point, train_label, test_point, test_label,
-              train_number, gradient, optimizer, optimizer_para,
-              save_LNN=False, save_result=-1):
+              train_number, optimizer_para,
+              gradient=gradient_bp, optimizer=Adam):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -469,21 +429,15 @@ class LNN:
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
         :param train_number: number of iteration
+        :param optimizer_para: the parameter dictionary for the optimizer
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
-        :param optimizer_para: the parameter dictionary for the optimizer
-        :param save_LNN: save parameters in file "save" or not, bool
-        :param save_result: save result in file "result" or not, int
         """
         self.result(train_point, train_label, test_point, test_label, 0)
         for i in range(1, train_number+1):
-            if i % 2000 == 0:
+            if i >= 100 and i % 100 == 0:
                 self.result(train_point, train_label, test_point, test_label, i)
 
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
-
-        # save para/result as .csv
-        if save_LNN: self.save_LNN()
-        if save_result != -1: self.save_result(save_result)
