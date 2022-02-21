@@ -35,14 +35,15 @@ class Visual:
         ax, fig = None, None
         if self.D == 2:
             fig, ax = plt.subplots()
-            # plot_confidence_interval_fill(mu_set, cov_set, ax, color)
+            plot_confidence_interval_unfill(self.mu_set, self.cov_set,
+                                            ax, self.color)
         elif self.D == 3:
             ax = plt.subplot(111, projection='3d')
 
         if ax is None: return
         plot_scatter(self.sample_point, self.sample_label, ax, self.color)
         plt.legend(handles=self.legend)
-        plt.title("Sample Point", fontsize=14)
+        # plt.title("Sample Point", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
@@ -58,8 +59,7 @@ class Visual:
         plot_decision_boundary(self.K + 1 * self.bg, em.E_step, ax, self.color,
                                self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
-        plt.title("Expectation Maximization (EM) Decision Boundary",
-                  fontsize=14)
+        # plt.title("EM Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
@@ -75,7 +75,7 @@ class Visual:
         plot_decision_boundary(self.K + 1 * self.bg, lnn.predict, ax, self.color,
                                self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
-        plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
+        # plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
@@ -91,8 +91,7 @@ class Visual:
         plot_decision_boundary(self.K + 1 * self.bg, qnn.predict, ax, self.color,
                                self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
-        plt.title("Quadratic Neural Network (QNN) Decision Boundary",
-                  fontsize=14)
+        #  plt.title("Quadratic Neural Network (QNN) Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
         fig.show()
@@ -175,7 +174,7 @@ def plot_confidence_interval_unfill(mu_set, cov_set, ax, color):
         # plot the ellipse
         ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
                          angle=angle, fill=False, edgecolor=color[k],
-                         linewidth=0.5)
+                         linewidth=1.5)
         ax.add_artist(ell)
 
 

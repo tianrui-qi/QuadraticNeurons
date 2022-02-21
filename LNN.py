@@ -1,10 +1,8 @@
-import os
 import numpy as np
 
 
 class LNN:
-    def __init__(self, dimension, neuron_num, activation_func,
-                 load_LNN=False):
+    def __init__(self, dimension, neuron_num, activation_func):
         """
         :param dimension: dimension of sample point, int
         :param neuron_num: dictionary, { layer index : number of nodes }
@@ -12,7 +10,6 @@ class LNN:
         :param activation_func:dictionary, { layer index : function }
             the activation function after each layers' output, including hidden
             and output layers
-        :param load_LNN: load parameters of network from file "save/LNN_" or not
         """
         # basic dimension parameter
         self.L = len(neuron_num)         # number of hidden & output layer
@@ -35,19 +32,15 @@ class LNN:
         self.train_accuracy = []
         self.test_accuracy  = []
 
-        self.initialize_network(load_LNN)
+        self.initialize_network()
 
-    def initialize_network(self, load_LNN):
+    def initialize_network(self):
         """
         Initialize five dictionary of the parameters of object "LNN."
 
         See https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf (English)
             https://arxiv.org/abs/1502.01852 (English)
         about the initialization of parameter weighs and bias.
-
-        :param load_LNN: bool
-            If the parameters load from file "save" Notes that the network
-            are saved by the help function "save_LNN"
         """
         if len(self.activation_func) != self.L:
             print('Error! Dimension of the "activation_func" not match!')
@@ -81,7 +74,8 @@ class LNN:
             self.m[key] = np.zeros((1, node_to))
             self.v[key] = np.zeros((1, node_to))
 
-        if load_LNN: self.load_LNN()
+    def load_NN(self, para, h, m, v):
+        self.para, self.h, self.m, self.v = para, h, m, v
 
     """ Estimator """
 
@@ -100,7 +94,6 @@ class LNN:
         for l in range(self.L):
             z = np.dot(a, self.para['w'+str(l)]) + self.para['b'+str(l)]
             a = self.activation_func[l](z)
-
         return a
 
     def accuracy(self, sample_point, sample_label):
@@ -121,7 +114,6 @@ class LNN:
         """
         y = np.argmax(self.predict(sample_point), axis=1)
         t = np.argmax(sample_label, axis=1)
-
         return np.sum(y == t) / sample_point.shape[0]
 
     """ Three Activation Functions """
@@ -169,7 +161,7 @@ class LNN:
         y = self.predict(sample_point)
         t = sample_label
 
-        delta = 1e-7
+        delta = 1e-10
         return -(np.sum(np.multiply(t, np.log(y + delta))) /
                  sample_point.shape[0])
 
@@ -369,26 +361,6 @@ class LNN:
 
         return (sample_point + shift) * scale  # [ sample_size * D ], np.array
 
-    def load_LNN(self):
-        """
-        Load all the parameters of the network from the file "save/LNN_".
-        Notes that the network's parameters will be initialized by the help
-        function only when variable of "initialize_network", "load_LNN" is
-        True.
-        """
-        if not os.path.exists('save'): return
-        for l in range(self.L):
-            for k in ('w', 'b'):
-                key = k+str(l)
-                self.para[key] = np.loadtxt(
-                    "save/LNN_para_{}.csv".format(key), delimiter=",")
-                self.h[key] = np.loadtxt(
-                    "save/LNN_h_{}.csv".format(key), delimiter=",")
-                self.m[key] = np.loadtxt(
-                    "save/LNN_m_{}.csv".format(key), delimiter=",")
-                self.v[key] = np.loadtxt(
-                    "save/LNN_v_{}.csv".format(key), delimiter=",")
-
     """ Trainer """
 
     def result(self, train_point, train_label, test_point, test_label, i):
@@ -435,7 +407,7 @@ class LNN:
         """
         self.result(train_point, train_label, test_point, test_label, 0)
         for i in range(1, train_number+1):
-            if i >= 100 and i % 100 == 0:
+            if i <= 500 or i % 500 == 0:
                 self.result(train_point, train_label, test_point, test_label, i)
 
             # train

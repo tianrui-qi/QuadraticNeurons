@@ -64,12 +64,12 @@ def main():
 
     for i in range(run_number):
         # B. LNN
-        lnn = LNN(D, LNN_neuron_num, LNN_activation_func, load_LNN=False)
+        lnn = LNN(D, LNN_neuron_num, LNN_activation_func)
         lnn.train(train_point, train_label, test_point, test_label,
                   NN_train_number, optimizer_para)
 
         # C. QNN
-        qnn = QNN(D, QNN_neuron_num, QNN_activation_func, load_QNN=False)
+        qnn = QNN(D, QNN_neuron_num, QNN_activation_func)
         qnn.train(train_point, train_label, test_point, test_label,
                   NN_train_number, optimizer_para)
 
