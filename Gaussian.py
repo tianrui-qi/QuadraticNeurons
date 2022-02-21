@@ -1,4 +1,3 @@
-import os
 import random
 import numpy as np
 import scipy.stats as st
@@ -69,29 +68,6 @@ class Gaussian:
                 sample_label[n][k] = 1
 
         return sample_label
-
-    def save_sample(self):
-        """
-        Save all the point and label if save_sample=True
-        """
-        if not os.path.exists('sample'): os.mkdir('sample')
-        np.savetxt("sample/sample_point.csv", self.sample_point, delimiter=",")
-        np.savetxt("sample/sample_label.csv", self.sample_label, delimiter=",")
-        np.savetxt("sample/train_point.csv",  self.train_point,  delimiter=",")
-        np.savetxt("sample/train_label.csv",  self.train_label,  delimiter=",")
-        np.savetxt("sample/test_point.csv",   self.test_point,   delimiter=",")
-        np.savetxt("sample/test_label.csv",   self.test_label,   delimiter=",")
-
-    def load_sample(self):
-        """
-        Load all the point and label if load_sample=True
-        """
-        self.sample_point = np.loadtxt("sample/sample_point.csv", delimiter=",")
-        self.sample_label = np.loadtxt("sample/sample_label.csv", delimiter=",")
-        self.train_point  = np.loadtxt("sample/train_point.csv",  delimiter=",")
-        self.train_label  = np.loadtxt("sample/train_label.csv",  delimiter=",")
-        self.test_point   = np.loadtxt("sample/test_point.csv",   delimiter=",")
-        self.test_label   = np.loadtxt("sample/test_label.csv",   delimiter=",")
 
     def generate_sample(self, N_k, bg=False):
         """

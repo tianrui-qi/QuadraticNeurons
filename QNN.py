@@ -1,10 +1,8 @@
-import os
 import numpy as np
 
 
 class QNN:
-    def __init__(self, dimension, neuron_num, activation_func,
-                 load_QNN=False):
+    def __init__(self, dimension, neuron_num, activation_func):
         """
         :param dimension: dimension of sample point, int
         :param neuron_num: dictionary, { layer index : number of nodes }
@@ -12,7 +10,6 @@ class QNN:
         :param activation_func:dictionary, { layer index : function }
             the activation function after each layers' output, including hidden
             and output layers
-        :param load_QNN: load parameters of network from file "save/QNN_" or not
         """
         # basic dimension parameter
         self.L = len(neuron_num)         # number of hidden & output layer
@@ -35,19 +32,15 @@ class QNN:
         self.train_accuracy = []
         self.test_accuracy  = []
 
-        self.initialize_network(load_QNN)
+        self.initialize_network()
 
-    def initialize_network(self, load_QNN):
+    def initialize_network(self):
         """
         Initialize five dictionary of the parameters of object "QNN."
 
         See https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf (English)
             https://arxiv.org/abs/1502.01852 (English)
         about the initialization of parameter weighs and bias.
-
-        :param load_QNN: bool
-            If the parameters load from file "save" Notes that the network
-            are saved by the help function "save_QNN"
         """
         if len(self.activation_func) != self.L:
             print('Error! Dimension of the "activation_func" not match!')
@@ -82,7 +75,8 @@ class QNN:
                 self.m[key] = np.zeros((1, node_to))
                 self.v[key] = np.zeros((1, node_to))
 
-        if load_QNN: self.load_QNN()
+    def load_NN(self, para, h, m, v):
+        self.para, self.h, self.m, self.v = para, h, m, v
 
     """ Estimator """
 
@@ -172,7 +166,7 @@ class QNN:
         y = self.predict(sample_point)
         t = sample_label
 
-        delta = 1e-7
+        delta = 1e-10
         return -(np.sum(np.multiply(t, np.log(y + delta))) /
                  sample_point.shape[0])
 
@@ -367,27 +361,6 @@ class QNN:
 
         return (sample_point + shift) * scale  # [ sample_size * D ], np.array
 
-    def load_QNN(self):
-        """
-        Load all the parameters of the network from the file "save/QNN_".
-        Notes that the network's parameters will be initialized by the help
-        function only when variable of "initialize_network", "load_QNN" is
-        True.
-        """
-        if not os.path.exists('save'): return
-        for l in range(self.L):
-            for i in ('w', 'b'):
-                for j in ('r', 'g', 'b'):
-                    key = i + j + str(l)
-                    self.para[key] = np.loadtxt(
-                        "save/QNN_para_{}.csv".format(key), delimiter=",")
-                    self.h[key] = np.loadtxt(
-                        "save/QNN_h_{}.csv".format(key), delimiter=",")
-                    self.m[key] = np.loadtxt(
-                        "save/QNN_m_{}.csv".format(key), delimiter=",")
-                    self.v[key] = np.loadtxt(
-                        "save/QNN_v_{}.csv".format(key), delimiter=",")
-
     """ Trainer """
 
     def result(self, train_point, train_label, test_point, test_label, i):
@@ -434,7 +407,7 @@ class QNN:
         """
         self.result(train_point, train_label, test_point, test_label, 0)
         for i in range(1, train_number+1):
-            if i >= 100 and i % 100 == 0:
+            if i <= 500 or i % 500 == 0:
                 self.result(train_point, train_label, test_point, test_label, i)
 
             # train
