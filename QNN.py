@@ -385,9 +385,11 @@ class QNN:
         self.test_accuracy.append(test_accuracy)
 
         # print result
+        """
         print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
               (i, train_loss, 100 * train_accuracy,
                test_loss, 100 * test_accuracy))
+        """
 
     def train(self, train_point, train_label, test_point, test_label,
               train_number, optimizer_para,

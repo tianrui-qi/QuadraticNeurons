@@ -141,23 +141,23 @@ class LNN:
 
     def CRE(self, sample_point, sample_label):
         """
-         "Cross Entropy Error"
+        Cross Entropy Error
 
-         The t is correct label. The first layer of for loop is using to
-         traverse entire sample, and the second layer of for loop is using to
-         control which y value of that sample will affect the loss value. The
-         "y" value will affect the loss value only when it's in the same
-         position of correct label.
+        The t is correct label. The first layer of for loop is using to
+        traverse entire sample, and the second layer of for loop is using to
+        control which y value of that sample will affect the loss value. The
+        "y" value will affect the loss value only when it's in the same
+        position of correct label.
 
-         Example,
+        Example,
                  t_i = [  0  0  1  0 ]       y_i = [ 10 20 10  2 ]
-         then, for sample point i,
-         loss_i = ( 0 * 10 ) + ( 0 * 20 ) + ( 1 * 10 ) + ( 0 * 2 ) = 1 * 10 = 10
+        then, for sample point i,
+        loss_i = ( 0 * 10 ) + ( 0 * 20 ) + ( 1 * 10 ) + ( 0 * 2 ) = 1 * 10 = 10
 
-         :param sample_point: [ sample_size * D ], np.array
-         :param sample_label: [ sample_size * K ], np.array
-         :return: loss value (float)
-         """
+        :param sample_point: [ sample_size * D ], np.array
+        :param sample_label: [ sample_size * K ], np.array
+        :return: loss value (float)
+        """
         y = self.predict(sample_point)
         t = sample_label
 
@@ -385,9 +385,11 @@ class LNN:
         self.test_accuracy.append(test_accuracy)
 
         # print result
+        """
         print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
               (i, train_loss, 100 * train_accuracy,
                test_loss, 100 * test_accuracy))
+        """
 
     def train(self, train_point, train_label, test_point, test_label,
               train_number, optimizer_para,

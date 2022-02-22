@@ -63,6 +63,7 @@ def main():
         save_result(lnn, i, string)
         visual.plot_LNN_DB(lnn).savefig("special/fig/{}_{}".format(i, string))
 
+
         string = "L({}-10-{})".format(D, K)
         lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
         lnn.train(train_point, train_label, test_point, test_label,
@@ -70,6 +71,7 @@ def main():
         save_NN(lnn, i, string)
         save_result(lnn, i, string)
         visual.plot_LNN_DB(lnn).savefig("special/fig/{}_{}".format(i, string))
+
 
         string = "L({}-50-{})".format(D, K)
         lnn = LNN(D, LNN_neuron_num_2_50, LNN_activation_func_2)
@@ -79,6 +81,7 @@ def main():
         save_result(lnn, i, string)
         visual.plot_LNN_DB(lnn).savefig("special/fig/{}_{}".format(i, string))
 
+
         string = "L({}-100-{})".format(D, K)
         lnn = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
         lnn.train(train_point, train_label, test_point, test_label,
@@ -87,6 +90,7 @@ def main():
         save_result(lnn, i, string)
         visual.plot_LNN_DB(lnn).savefig("special/fig/{}_{}".format(i, string))
 
+
         string = "L({}-500-{})".format(D, K)
         lnn = LNN(D, LNN_neuron_num_2_500, LNN_activation_func_2)
         lnn.train(train_point, train_label, test_point, test_label,
@@ -94,6 +98,7 @@ def main():
         save_NN(lnn, i, string)
         save_result(lnn, i, string)
         visual.plot_LNN_DB(lnn).savefig("special/fig/{}_{}".format(i, string))
+
 
         string = "Q({}-{})".format(D, K)
         qnn = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
@@ -128,6 +133,7 @@ def save_sample(gaussian, i):
     np.savetxt("special/sample/{}_test_label.csv".format(i),
                gaussian.test_label, delimiter=",")
 
+
 def load_sample(i):
     sample_point = np.loadtxt("special/sample/{}_sample_point.csv".format(i),
                               delimiter=",")
@@ -144,6 +150,7 @@ def load_sample(i):
 
     return train_point, train_label, test_point, test_label, \
            sample_point, sample_label
+
 
 def save_result(NN, i, string):
     if not os.path.exists('special'): os.mkdir('special')

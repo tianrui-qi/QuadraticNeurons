@@ -30,7 +30,6 @@ class Visual:
         self.y_max = sample_point[np.argmax(sample_point.T[1])][1] + edge
         self.y_min = sample_point[np.argmin(sample_point.T[1])][1] - edge
 
-
     def plot_sample(self):
         ax, fig = None, None
         if self.D == 2:
@@ -46,7 +45,6 @@ class Visual:
         # plt.title("Sample Point", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
-        fig.show()
 
         return fig
 
@@ -62,7 +60,6 @@ class Visual:
         # plt.title("EM Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
-        fig.show()
 
         return fig
 
@@ -78,7 +75,6 @@ class Visual:
         # plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
-        fig.show()
 
         return fig
 
@@ -94,7 +90,6 @@ class Visual:
         #  plt.title("Quadratic Neural Network (QNN) Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
-        fig.show()
 
         return fig
 
