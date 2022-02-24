@@ -50,7 +50,8 @@ class EM:
             post_p[:, k] = self.prio_p[k] * \
                            st.multivariate_normal.pdf(sample_point,
                                                       self.mu_set[k],
-                                                      self.cov_set[k])
+                                                      self.cov_set[k],
+                                                      allow_singular=True)
 
         return post_p/np.sum(post_p, axis=1)[:, None]   # [ N * K ]
 
@@ -130,7 +131,6 @@ class EM:
             if current_accuracy > accuracy:
                 order = j
                 accuracy = current_accuracy
-
         # change the order of mu, cov, prior probability according to the order
         for data in (self.mu_set, self.cov_set, self.prio_p):
             temp = np.copy(data)    # store the old data
