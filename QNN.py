@@ -385,11 +385,9 @@ class QNN:
         self.test_accuracy.append(test_accuracy)
 
         # print result
-        """
         print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
               (i, train_loss, 100 * train_accuracy,
                test_loss, 100 * test_accuracy))
-        """
 
     def train(self, train_point, train_label, test_point, test_label,
               train_number, optimizer_para,
@@ -407,11 +405,7 @@ class QNN:
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
         """
-        self.result(train_point, train_label, test_point, test_label, 0)
-        for i in range(1, train_number+1):
-            if i <= 500 or i % 500 == 0:
-                self.result(train_point, train_label, test_point, test_label, i)
-
+        for i in range(1, train_number + 1):
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
