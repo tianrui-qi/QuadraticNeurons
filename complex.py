@@ -4,10 +4,11 @@ from LNN import LNN
 from QNN import QNN
 
 import os
+import time
 import numpy as np
 import scipy.stats as st
 
-sample_number = 2
+sample_number = 500
 EM_train_number = 1000
 run_number = 20
 NN_train_number = 4000
@@ -25,10 +26,11 @@ optimizer_para = {
     "iter":       0
 }
 
-for D in (2, 3):
+for D in (2, ):
     for K in (6, ):
         result = np.zeros([sample_number, 8])
         for S in range(sample_number):
+            set = time.time()
             print(D, K, S)
 
             LNN_neuron_num_1     = {0: K}
@@ -71,9 +73,9 @@ for D in (2, 3):
                 em = EM(K)
                 em.train(train_point, train_label, EM_train_number)
                 em_accuracy = em.test(test_point, test_label)
+                if bayes_accuracy - em_accuracy < 0.10: break
 
-                if bayes_accuracy - em_accuracy < 0.05: break
-
+            print("em")
             result[S][0] = bayes_accuracy
             result[S][1] = em_accuracy
 
@@ -109,3 +111,6 @@ for D in (2, 3):
 
             if not os.path.exists('complex'): os.mkdir('complex')
             np.savetxt("complex/D={}, K={}.csv".format(D, K), result, delimiter=",")
+
+            end = time.time()
+            print(end-set)
