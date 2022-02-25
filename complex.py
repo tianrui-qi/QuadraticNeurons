@@ -11,7 +11,7 @@ import scipy.stats as st
 sample_number = 500
 EM_train_number = 1000
 run_number = 20
-NN_train_number = 4000
+NN_train_number = 10000
 
 LNN_activation_func_1 = { 0: LNN.softmax }
 LNN_activation_func_2 = { 0: LNN.relu, 1: LNN.softmax }
