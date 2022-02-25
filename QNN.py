@@ -405,7 +405,15 @@ class QNN:
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
         """
-        for i in range(1, train_number + 1):
+        loss_record = 0
+
+        for i in range(1, train_number+1):
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
+
+            # break point
+            train_loss = self.CRE(train_point, train_label)
+            if abs(train_loss - loss_record) <= 0.0000001:
+                break
+            loss_record = train_loss
