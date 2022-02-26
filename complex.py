@@ -24,11 +24,10 @@ optimizer_para = {
 }
 
 if not os.path.exists('complex'): os.mkdir('complex')
-for D in (3, 2):
+for D in (2, 3):
     for K in (6, ):
         result = np.zeros([sample_number, 8])
         for S in range(sample_number):
-            set = time.time()
             print(D, K, S)
 
             LNN_neuron_num_1     = {0: K}
@@ -39,6 +38,7 @@ for D in (3, 2):
             QNN_neuron_num_1     = {0: K}
 
             print("EM")
+            set = time.time()
             while True:
                 """ Set N_k, mu, and cov """
                 N_k = [np.random.randint(3000, 6000) for k in range(K)]
@@ -83,6 +83,7 @@ for D in (3, 2):
 
 
             print("Q({}-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 qnn = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
@@ -97,6 +98,7 @@ for D in (3, 2):
 
 
             print("L({}-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 lnn = LNN(D, LNN_neuron_num_1, LNN_activation_func_1)
@@ -105,66 +107,66 @@ for D in (3, 2):
                 for j in range(1, 11):
                     accuracy += lnn.test_accuracy[-j]
                 print(time.time() - set)
-            result[S][2] = accuracy / 100
+            result[S][3] = accuracy / 100
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
 
             print("L({}-10-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
-                result[S][4] = lnn.accuracy(test_point, test_label)
                 for j in range(1, 11):
                     accuracy += lnn.test_accuracy[-j]
                 print(time.time() - set)
-            result[S][2] = accuracy / 100
+            result[S][4] = accuracy / 100
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
 
             print("L({}-50-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 lnn = LNN(D, LNN_neuron_num_2_50, LNN_activation_func_2)
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
-                result[S][5] = lnn.accuracy(test_point, test_label)
                 for j in range(1, 11):
                     accuracy += lnn.test_accuracy[-j]
                 print(time.time() - set)
-            result[S][2] = accuracy / 100
+            result[S][5] = accuracy / 100
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
 
             print("L({}-100-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 lnn = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
-                result[S][5] = lnn.accuracy(test_point, test_label)
                 for j in range(1, 11):
                     accuracy += lnn.test_accuracy[-j]
                 print(time.time() - set)
-            result[S][2] = accuracy / 100
+            result[S][6] = accuracy / 100
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
 
             print("L({}-100-50-{})".format(D, K))
+            set = time.time()
             accuracy = 0
             for i in range(10):
                 lnn = LNN(D, LNN_neuron_num_3_100, LNN_activation_func_3)
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
-                result[S][5] = lnn.accuracy(test_point, test_label)
                 for j in range(1, 11):
                     accuracy += lnn.test_accuracy[-j]
                 print(time.time() - set)
-            result[S][2] = accuracy / 100
+            result[S][7] = accuracy / 100
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
