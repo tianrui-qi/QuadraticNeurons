@@ -96,7 +96,7 @@ class LNN:
             a = self.activation_func[l](z)
         return a
 
-    def accuracy(self, sample_point, sample_label):
+    def accuracy(self, test_point, test_label):
         """
         Give a sample point, get the predicting label from the network. Then,
         compare the predicting label with the correct label "sample_label", and
@@ -108,13 +108,13 @@ class LNN:
                 correct = correct + 1
         accuracy = correct / sample_size
 
-        :param sample_point: [ sample_size * D ], np.array
-        :param sample_label: [ sample_size * K ], np.array
+        :param test_point: [ sample_size * D ], np.array
+        :param test_label: [ sample_size * K ], np.array
         :return: accuracy of the network prediction (float)
         """
-        y = np.argmax(self.predict(sample_point), axis=1)
-        t = np.argmax(sample_label, axis=1)
-        return np.sum(y == t) / sample_point.shape[0]
+        y = np.argmax(self.predict(test_point), axis=1)
+        t = np.argmax(test_label, axis=1)
+        return np.sum(y == t) / test_point.shape[0]
 
     """ Three Activation Functions """
 
@@ -385,12 +385,14 @@ class LNN:
         self.test_accuracy.append(test_accuracy)
 
         # print result
+        """
         print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
               (i, train_loss, 100 * train_accuracy,
                test_loss, 100 * test_accuracy))
+        """
 
     def train(self, train_point, train_label, test_point, test_label,
-              train_number, optimizer_para,
+              optimizer_para, train_number=10000,
               gradient=gradient_bp, optimizer=Adam):
         """
         Use a gradient calculator to calculate the gradient of each parameter
@@ -400,20 +402,18 @@ class LNN:
         :param train_label: [ sample_size * K ], np.array
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
-        :param train_number: number of iteration
         :param optimizer_para: the parameter dictionary for the optimizer
+        :param train_number: number of iteration
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
         """
-        loss_record = 0
-
         for i in range(1, train_number+1):
+            self.result(train_point, train_label, test_point, test_label, i)
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
 
             # break point
-            train_loss = self.CRE(train_point, train_label)
-            if abs(train_loss - loss_record) <= 0.0000001:
-                break
-            loss_record = train_loss
+            if i > 2:
+                if abs(self.train_loss[-1] - self.train_loss[-2]) <= 0.00000005:
+                    break

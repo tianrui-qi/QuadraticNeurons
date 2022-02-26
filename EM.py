@@ -11,7 +11,7 @@ class EM:
 
     Example:
         em = EM(K)
-        em.train(train_point, train_label, EM_train_number)
+        em.train(train_point)
         print("EM accuracy: %7.5f" % em.test(test_point, test_label))
     """
 
@@ -84,7 +84,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, train_label, train_number):
+    def train(self, train_point, train_label=None, train_number=1000):
         """
         Repeat E step and M step for "train_number" time.
 
@@ -119,6 +119,8 @@ class EM:
         # train
         for i in range(train_number):
             self.M_step(train_point, self.E_step(train_point))
+
+        if train_label is None: return self.mu_set, self.cov_set, self.prio_p
 
         # get the correct order
         order = []  # [ K ], store the correct order

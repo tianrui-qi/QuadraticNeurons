@@ -9,9 +9,6 @@ import numpy as np
 import scipy.stats as st
 
 sample_number = 500
-EM_train_number = 1000
-run_number = 20
-NN_train_number = 10000
 
 LNN_activation_func_1 = { 0: LNN.softmax }
 LNN_activation_func_2 = { 0: LNN.relu, 1: LNN.softmax }
@@ -26,7 +23,8 @@ optimizer_para = {
     "iter":       0
 }
 
-for D in (2, ):
+if not os.path.exists('complex'): os.mkdir('complex')
+for D in (3, 2):
     for K in (6, ):
         result = np.zeros([sample_number, 8])
         for S in range(sample_number):
@@ -40,10 +38,12 @@ for D in (2, ):
             LNN_neuron_num_3_100 = {0: 100, 1: 50, 2: K}
             QNN_neuron_num_1     = {0: K}
 
+            print("EM")
             while True:
                 """ Set N_k, mu, and cov """
                 N_k = [np.random.randint(3000, 6000) for k in range(K)]
-                mu_set = np.array([(np.random.random(D) - 0.5) * 15 for i in range(K)])
+                mu_set = np.array([(np.random.random(D) - 0.5) * 15
+                                   for i in range(K)])
                 cov_set = []
                 for i in range(K):
                     a = np.random.random((D, D)) * 2 - 1
@@ -71,46 +71,100 @@ for D in (2, ):
 
                 """ EM algorithm """
                 em = EM(K)
-                em.train(train_point, train_label, EM_train_number)
+                em.train(train_point, train_label)
                 em_accuracy = em.test(test_point, test_label)
                 if bayes_accuracy - em_accuracy < 0.10: break
 
-            print("em")
             result[S][0] = bayes_accuracy
             result[S][1] = em_accuracy
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
+            print(time.time() - set)
 
-            qnn = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
-            qnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][2] = qnn.accuracy(test_point, test_label)
 
-            lnn = LNN(D, LNN_neuron_num_1, LNN_activation_func_1)
-            lnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][3] = lnn.accuracy(test_point, test_label)
+            print("Q({}-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                qnn = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
+                qnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                for j in range(1, 11):
+                    accuracy += qnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
 
-            lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
-            lnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][4] = lnn.accuracy(test_point, test_label)
 
-            lnn = LNN(D, LNN_neuron_num_2_50, LNN_activation_func_2)
-            lnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][5] = lnn.accuracy(test_point, test_label)
+            print("L({}-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                lnn = LNN(D, LNN_neuron_num_1, LNN_activation_func_1)
+                lnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                for j in range(1, 11):
+                    accuracy += lnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
 
-            lnn = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
-            lnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][6] = lnn.accuracy(test_point, test_label)
 
-            lnn = LNN(D, LNN_neuron_num_3_100, LNN_activation_func_3)
-            lnn.train(train_point, train_label, test_point, test_label,
-                      NN_train_number, optimizer_para)
-            result[S][7] = lnn.accuracy(test_point, test_label)
+            print("L({}-10-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
+                lnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                result[S][4] = lnn.accuracy(test_point, test_label)
+                for j in range(1, 11):
+                    accuracy += lnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
 
-            if not os.path.exists('complex'): os.mkdir('complex')
-            np.savetxt("complex/D={}, K={}.csv".format(D, K), result, delimiter=",")
 
-            end = time.time()
-            print(end-set)
+            print("L({}-50-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                lnn = LNN(D, LNN_neuron_num_2_50, LNN_activation_func_2)
+                lnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                result[S][5] = lnn.accuracy(test_point, test_label)
+                for j in range(1, 11):
+                    accuracy += lnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
+
+
+            print("L({}-100-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                lnn = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
+                lnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                result[S][5] = lnn.accuracy(test_point, test_label)
+                for j in range(1, 11):
+                    accuracy += lnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
+
+
+            print("L({}-100-50-{})".format(D, K))
+            accuracy = 0
+            for i in range(10):
+                lnn = LNN(D, LNN_neuron_num_3_100, LNN_activation_func_3)
+                lnn.train(train_point, train_label, test_point, test_label,
+                          optimizer_para)
+                result[S][5] = lnn.accuracy(test_point, test_label)
+                for j in range(1, 11):
+                    accuracy += lnn.test_accuracy[-j]
+                print(time.time() - set)
+            result[S][2] = accuracy / 100
+            np.savetxt("complex/D={}, K={}.csv".format(D, K),
+                       result, delimiter=",")
