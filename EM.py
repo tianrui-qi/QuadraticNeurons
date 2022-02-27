@@ -84,7 +84,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, train_label=None, train_number=1000):
+    def train(self, train_point, train_label=None, train_number=2000):
         """
         Repeat E step and M step for "train_number" time.
 

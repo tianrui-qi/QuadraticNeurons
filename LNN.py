@@ -408,12 +408,8 @@ class LNN:
         :param optimizer: choose which optimizer will be use
         """
         for i in range(1, train_number+1):
-            self.result(train_point, train_label, test_point, test_label, i)
+            if i > train_number-50:
+                self.result(train_point, train_label, test_point, test_label, i)
             # train
             grad = gradient(self, train_point, train_label)
             optimizer(self, grad, optimizer_para)
-
-            # break point
-            if i > 2:
-                if abs(self.train_loss[-1] - self.train_loss[-2]) <= 0.00000005:
-                    break
