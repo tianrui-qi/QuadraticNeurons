@@ -408,7 +408,7 @@ class QNN:
         :param optimizer: choose which optimizer will be use
         """
         for i in range(1, train_number+1):
-            if i > train_number-70:
+            if i > train_number-110:
                 self.result(train_point, train_label, test_point, test_label, i)
             # train
             grad = gradient(self, train_point, train_label)
