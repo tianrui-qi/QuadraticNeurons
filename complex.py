@@ -73,8 +73,8 @@ for D in (2, 3):
                 if 0.005 > bayes_accuracy - em_accuracy >= 0: break
             result[S][0] = bayes_accuracy
             result[S][1] = em_accuracy
-            print(result[S][0])
-            print(result[S][1])
+            print(result[S][0] * 100)
+            print(result[S][1] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
@@ -84,12 +84,13 @@ for D in (2, 3):
                 qnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 51):
+                for j in range(1, 81):
                     accuracy += qnn.test_accuracy[-j]
-                result[S][2] = max(accuracy / 50, result[S][2])
+                result[S][2] = max(accuracy / 80, result[S][2])
                 print(result[S][2] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
+
 
             print("L({}-{})".format(D, K))
             for i in range(5):
@@ -103,7 +104,8 @@ for D in (2, 3):
                 print(result[S][3] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
-            
+
+
             print("L({}-10-{})".format(D, K))
             for i in range(5):
                 lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
@@ -116,6 +118,7 @@ for D in (2, 3):
                 print(result[S][4] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
+
 
             print("L({}-50-{})".format(D, K))
             for i in range(5):
@@ -130,6 +133,7 @@ for D in (2, 3):
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
+
             print("L({}-100-{})".format(D, K))
             for i in range(5):
                 lnn = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
@@ -141,4 +145,4 @@ for D in (2, 3):
                 result[S][6] = max(accuracy / 50, result[S][6])
                 print(result[S][6] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
-                        result, delimiter=",")
+                       result, delimiter=",")
