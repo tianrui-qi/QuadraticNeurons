@@ -12,7 +12,6 @@ sample_number = 500
 
 LNN_activation_func_1 = { 0: LNN.softmax }
 LNN_activation_func_2 = { 0: LNN.relu, 1: LNN.softmax }
-LNN_activation_func_3 = { 0: LNN.relu, 1: LNN.relu, 2: LNN.softmax }
 QNN_activation_func_1 = { 0: QNN.softmax }
 
 optimizer_para = {
@@ -26,7 +25,7 @@ optimizer_para = {
 if not os.path.exists('complex'): os.mkdir('complex')
 for D in (2, 3):
     for K in (6, ):
-        result = np.zeros([sample_number, 8])
+        result = np.zeros([sample_number, 7])
         for S in range(sample_number):
             print(D, K, S)
 
@@ -34,13 +33,12 @@ for D in (2, 3):
             LNN_neuron_num_2_10  = {0: 10,  1: K}
             LNN_neuron_num_2_50  = {0: 50,  1: K}
             LNN_neuron_num_2_100 = {0: 100, 1: K}
-            LNN_neuron_num_3_100 = {0: 100, 1: 50, 2: K}
             QNN_neuron_num_1     = {0: K}
 
             print("EM")
             while True:
                 """ Set N_k, mu, and cov """
-                N_k = [np.random.randint(3000, 6000) for k in range(K)]
+                N_k = [np.random.randint(1000, 3000) for k in range(K)]
                 mu_set = np.array([(np.random.random(D) - 0.5) * 15
                                    for i in range(K)])
                 cov_set = []
@@ -72,8 +70,7 @@ for D in (2, 3):
                 em = EM(K)
                 em.train(train_point, train_label)
                 em_accuracy = em.test(test_point, test_label)
-                if 0.05 > bayes_accuracy - em_accuracy >= 0: break
-
+                if 0.005 > bayes_accuracy - em_accuracy >= 0: break
             result[S][0] = bayes_accuracy
             result[S][1] = em_accuracy
             print(result[S][0])
@@ -81,20 +78,18 @@ for D in (2, 3):
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
 
-
             print("Q({}-{})".format(D, K))
             for i in range(5):
                 qnn = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
                 qnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 31):
+                for j in range(1, 51):
                     accuracy += qnn.test_accuracy[-j]
-                result[S][2] = max(accuracy / 30, result[S][2])
-                print(result[S][2])
+                result[S][2] = max(accuracy / 50, result[S][2])
+                print(result[S][2] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
-
 
             print("L({}-{})".format(D, K))
             for i in range(5):
@@ -102,28 +97,25 @@ for D in (2, 3):
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 31):
+                for j in range(1, 51):
                     accuracy += lnn.test_accuracy[-j]
-                result[S][3] = max(accuracy / 30, result[S][3])
-                print(result[S][3])
+                result[S][3] = max(accuracy / 50, result[S][3])
+                print(result[S][3] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
-
-
+            
             print("L({}-10-{})".format(D, K))
-
             for i in range(5):
                 lnn = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 31):
+                for j in range(1, 51):
                     accuracy += lnn.test_accuracy[-j]
-                result[S][4] = max(accuracy / 30, result[S][4])
-                print(result[S][4])
+                result[S][4] = max(accuracy / 50, result[S][4])
+                print(result[S][4] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
-
 
             print("L({}-50-{})".format(D, K))
             for i in range(5):
@@ -131,13 +123,12 @@ for D in (2, 3):
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 31):
+                for j in range(1, 51):
                     accuracy += lnn.test_accuracy[-j]
-                result[S][5] = max(accuracy / 30, result[S][5])
-                print(result[S][5])
+                result[S][5] = max(accuracy / 50, result[S][5])
+                print(result[S][5] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
                        result, delimiter=",")
-
 
             print("L({}-100-{})".format(D, K))
             for i in range(5):
@@ -145,23 +136,9 @@ for D in (2, 3):
                 lnn.train(train_point, train_label, test_point, test_label,
                           optimizer_para)
                 accuracy = 0
-                for j in range(1, 31):
+                for j in range(1, 51):
                     accuracy += lnn.test_accuracy[-j]
-                result[S][6] = max(accuracy / 30, result[S][6])
-                print(result[S][6])
+                result[S][6] = max(accuracy / 50, result[S][6])
+                print(result[S][6] * 100)
             np.savetxt("complex/D={}, K={}.csv".format(D, K),
-                       result, delimiter=",")
-
-
-            print("L({}-100-50-{})".format(D, K))
-            for i in range(5):
-                lnn = LNN(D, LNN_neuron_num_3_100, LNN_activation_func_3)
-                lnn.train(train_point, train_label, test_point, test_label,
-                          optimizer_para)
-                accuracy = 0
-                for j in range(1, 31):
-                    accuracy += lnn.test_accuracy[-j]
-                result[S][7] = max(accuracy / 30, result[S][7])
-                print(result[S][7])
-            np.savetxt("complex/D={}, K={}.csv".format(D, K),
-                       result, delimiter=",")
+                        result, delimiter=",")

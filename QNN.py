@@ -392,7 +392,7 @@ class QNN:
         """
 
     def train(self, train_point, train_label, test_point, test_label,
-              optimizer_para, train_number=10000,
+              optimizer_para, train_number=100000,
               gradient=gradient_bp, optimizer=Adam):
         """
         Use a gradient calculator to calculate the gradient of each parameter
@@ -408,7 +408,7 @@ class QNN:
         :param optimizer: choose which optimizer will be use
         """
         for i in range(1, train_number+1):
-            if i > train_number-50:
+            if i > train_number-70:
                 self.result(train_point, train_label, test_point, test_label, i)
             # train
             grad = gradient(self, train_point, train_label)
