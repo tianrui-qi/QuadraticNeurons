@@ -26,6 +26,8 @@ class EM:
         self.cov_set = None     # [ K * D * D ]
         self.prio_p  = None     # [ K ]
 
+        self.order = False
+
     def E_step(self, sample_point):
         """
         The goal here is in fact to find the posterior probability. Recall the
@@ -119,6 +121,7 @@ class EM:
         # train
         for i in range(train_number):
             self.M_step(train_point, self.E_step(train_point))
+        self.order = False
 
         if train_label is None: return self.mu_set, self.cov_set, self.prio_p
 
@@ -138,20 +141,39 @@ class EM:
             temp = np.copy(data)    # store the old data
             for i in range(self.K):
                 data[i] = temp[order[i]]
+        self.order = True
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def test(self, test_point, test_label):
+    def test(self, sample_point, sample_label):
         """
         Test the accuracy using the current EM.
 
-        :param test_point: [ sample_size * D ], np.array
-        :param test_label: [ sample_size * K ], np.array
+        :param sample_point: [ sample_size * D ], np.array
+        :param sample_label: [ sample_size * K ], np.array
         :return: accuracy, float
         """
         if self.prio_p is None: return 0    # means EM has not been trained
 
-        t = np.argmax(test_label, axis=1)
-        y = np.argmax(self.E_step(test_point), axis=1)
+        if self.order is True:
+            t = np.argmax(sample_label, axis=1)
+            y = np.argmax(self.E_step(sample_point), axis=1)
+            return np.sum(y == t) / len(sample_label)
 
-        return np.sum(y == t) / len(test_point)
+        order = []  # [ K ], store the correct order
+        accuracy = 0
+        t = np.argmax(sample_label, axis=1)
+        for j in list(itertools.permutations([i for i in range(self.K)],
+                                             self.K)):
+            y = np.argmax(self.E_step(sample_point)[:, j], axis=1)
+            current_accuracy = np.sum(y == t) / len(sample_label)
+            if current_accuracy > accuracy:
+                order = j
+                accuracy = current_accuracy
+        # change the order of mu, cov, prior probability according to the order
+        for data in (self.mu_set, self.cov_set, self.prio_p):
+            temp = np.copy(data)  # store the old data
+            for i in range(self.K):
+                data[i] = temp[order[i]]
+
+        return accuracy
