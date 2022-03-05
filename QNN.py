@@ -391,8 +391,9 @@ class QNN:
                test_loss, 100 * test_accuracy))
         """
 
+
     def train(self, train_point, train_label, test_point, test_label,
-              optimizer_para, train_number=100000,
+              optimizer_para, train_number=50000,
               gradient=gradient_bp, optimizer=Adam):
         """
         Use a gradient calculator to calculate the gradient of each parameter

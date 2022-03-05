@@ -32,10 +32,13 @@ class Visual:
 
     def plot_sample(self):
         ax, fig = None, None
+
         if self.D == 2:
             fig, ax = plt.subplots()
+            """
             plot_confidence_interval_unfill(self.mu_set, self.cov_set,
                                             ax, self.color)
+            """
         elif self.D == 3:
             ax = plt.subplot(111, projection='3d')
 
@@ -45,6 +48,7 @@ class Visual:
         # plt.title("Sample Point", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
+        plt.show()
 
         return fig
 
