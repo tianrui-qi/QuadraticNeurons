@@ -23,7 +23,7 @@ optimizer_para = {
 
 if not os.path.exists('complex'): os.mkdir('complex')
 for D in (3, 2):
-    for K in (6, ):
+    for K in (6, 8):
         result = np.zeros([sample_number, 6])
         for S in range(sample_number):
             print(D, K, S)
