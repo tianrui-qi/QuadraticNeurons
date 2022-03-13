@@ -5,7 +5,7 @@ import matplotlib.patches as mp
 plt.rcParams["figure.dpi"] = 400
 
 class Visual:
-    def __init__(self, sample_point, sample_label, mu_set, cov_set, bg=False):
+    def __init__(self, sample_point, sample_label, mu_set, cov_set):
         self.K = len(mu_set)
         self.D = len(sample_point[0])
 
@@ -14,21 +14,27 @@ class Visual:
         self.mu_set = mu_set
         self.cov_set = cov_set
 
-        self.color = ("blue", "orange", "red", "green", "cyan", "magenta")
+        self.color = ("orange", "red", "blue", "green", "cyan", "magenta")
+
+        self.legend = [mp.Patch(color=self.color[i],
+                                label="Gaussian_{}".format(i))
+                       for i in range(self.K)]
+        self.legend[0] = mp.Patch(color=self.color[0], label="Background")
+        self.x_max = 4
+        self.x_min = -5
+        self.y_max = 5
+        self.y_min = -6
+        """
         self.legend = [mp.Patch(color=self.color[i],
                                 label="Gaussian_{}".format(i + 1))
                        for i in range(self.K)]
-        if bg:
-            self.legend.append(mp.Patch(color=self.color[self.K],
-                                        label="Background"))
-
-        self.bg = bg
-
+                    
         edge = 0
         self.x_max = sample_point[np.argmax(sample_point.T[0])][0] + edge
         self.x_min = sample_point[np.argmin(sample_point.T[0])][0] - edge
         self.y_max = sample_point[np.argmax(sample_point.T[1])][1] + edge
         self.y_min = sample_point[np.argmin(sample_point.T[1])][1] - edge
+        """
 
     def plot_sample(self):
         ax, fig = None, None
@@ -45,53 +51,22 @@ class Visual:
         if ax is None: return
         plot_scatter(self.sample_point, self.sample_label, ax, self.color)
         plt.legend(handles=self.legend)
-        # plt.title("Sample Point", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
-        plt.show()
 
         return fig
 
-    def plot_EM_DB(self, em):
+    def plot_DB(self, method):
         if self.D != 2: return
 
         fig, ax = plt.subplots()
+        """
         plot_confidence_interval_unfill(self.mu_set, self.cov_set,
                                         ax, self.color)
-        plot_decision_boundary(self.K + 1 * self.bg, em.E_step, ax, self.color,
+        """
+        plot_decision_boundary(self.K, method.predict, ax, self.color,
                                self.x_min, self.x_max, self.y_min, self.y_max)
         plt.legend(handles=self.legend)
-        # plt.title("EM Decision Boundary", fontsize=14)
-        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
-        plt.grid()
-
-        return fig
-
-    def plot_LNN_DB(self, lnn):
-        if self.D != 2: return
-
-        fig, ax = plt.subplots()
-        # plot_confidence_interval_unfill(self.mu_set, self.cov_set,
-        #                                 ax, self.color)
-        plot_decision_boundary(self.K + 1 * self.bg, lnn.predict, ax, self.color,
-                               self.x_min, self.x_max, self.y_min, self.y_max)
-        plt.legend(handles=self.legend)
-        # plt.title("Linear Neural Network (LNN) Decision Boundary", fontsize=14)
-        plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
-        plt.grid()
-
-        return fig
-
-    def plot_QNN_DB(self, qnn):
-        if self.D != 2: return
-
-        fig, ax = plt.subplots()
-        # plot_confidence_interval_unfill(self.mu_set, self.cov_set,
-        #                                 ax, self.color)
-        plot_decision_boundary(self.K + 1 * self.bg, qnn.predict, ax, self.color,
-                               self.x_min, self.x_max, self.y_min, self.y_max)
-        plt.legend(handles=self.legend)
-        #  plt.title("Quadratic Neural Network (QNN) Decision Boundary", fontsize=14)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
 
@@ -166,14 +141,14 @@ def plot_confidence_interval_unfill(mu_set, cov_set, ax, color):
         sqrt_eigenvalue = np.sqrt(np.abs(eigenvalue))
 
         # calculate all the parameter needed for plotting ellipse
-        width  = 2 * 2 * sqrt_eigenvalue[0]
-        height = 2 * 2 * sqrt_eigenvalue[1]
+        width  = 2 * 3 * sqrt_eigenvalue[0]
+        height = 2 * 3 * sqrt_eigenvalue[1]
         angle  = np.rad2deg(np.arccos(eigenvector[0, 0]))
 
         # plot the ellipse
         ell = mp.Ellipse(xy=mu_set[k], width=width, height=height,
                          angle=angle, fill=False, edgecolor=color[k],
-                         linewidth=1.5)
+                         linewidth=1)
         ax.add_artist(ell)
 
 
