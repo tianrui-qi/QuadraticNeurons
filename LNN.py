@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 
@@ -26,13 +27,17 @@ class LNN:
         self.m = {}     # for optimizer "Adam"
         self.v = {}     # for optimizer "Adam"
 
+        self.initialize_network()
+
         # result
+        self.train_time = []
+        self.test_time = []
         self.train_loss = []
+        self.valid_loss = []
         self.test_loss  = []
         self.train_accuracy = []
+        self.valid_accuracy = []
         self.test_accuracy  = []
-
-        self.initialize_network()
 
     def initialize_network(self):
         """
@@ -79,7 +84,7 @@ class LNN:
 
     """ Estimator """
 
-    def predict(self, sample_point):
+    def predict(self, point):
         """
         Take "sample_point" as the network's input. Using the current network
         parameters to predict the label of the "sample_point." Notes that the
@@ -87,16 +92,16 @@ class LNN:
         each value [ 10 20 30 5 ]. To get the label, still need to take argmax
         of return value "z"
 
-        :param sample_point:  [ sample_size * D ], np.array
+        :param point:  [ sample_size * D ], np.array
         :return: [ sample_size * K ], np.array
         """
-        a = sample_point
+        a = point
         for l in range(self.L):
             z = np.dot(a, self.para['w'+str(l)]) + self.para['b'+str(l)]
             a = self.activation_func[l](z)
         return a
 
-    def accuracy(self, test_point, test_label):
+    def test(self, point, label):
         """
         Give a sample point, get the predicting label from the network. Then,
         compare the predicting label with the correct label "sample_label", and
@@ -108,13 +113,13 @@ class LNN:
                 correct = correct + 1
         accuracy = correct / sample_size
 
-        :param test_point: [ sample_size * D ], np.array
-        :param test_label: [ sample_size * K ], np.array
+        :param point: [ sample_size * D ], np.array
+        :param label: [ sample_size * K ], np.array
         :return: accuracy of the network prediction (float)
         """
-        y = np.argmax(self.predict(test_point), axis=1)
-        t = np.argmax(test_label, axis=1)
-        return np.sum(y == t) / test_point.shape[0]
+        y = np.argmax(self.predict(point), axis=1)
+        t = np.argmax(label, axis=1)
+        return np.sum(y == t) / point.shape[0]
 
     """ Three Activation Functions """
 
@@ -139,7 +144,7 @@ class LNN:
 
     """ One Loss Function """
 
-    def CRE(self, sample_point, sample_label):
+    def CRE(self, point, label):
         """
         Cross Entropy Error
 
@@ -154,20 +159,20 @@ class LNN:
         then, for sample point i,
         loss_i = ( 0 * 10 ) + ( 0 * 20 ) + ( 1 * 10 ) + ( 0 * 2 ) = 1 * 10 = 10
 
-        :param sample_point: [ sample_size * D ], np.array
-        :param sample_label: [ sample_size * K ], np.array
+        :param point: [ sample_size * D ], np.array
+        :param label: [ sample_size * K ], np.array
         :return: loss value (float)
         """
-        y = self.predict(sample_point)
-        t = sample_label
+        y = self.predict(point)
+        t = label
 
         delta = 1e-10
         return -(np.sum(np.multiply(t, np.log(y + delta))) /
-                 sample_point.shape[0])
+                 point.shape[0])
 
     """ Two Gradient Calculator """
 
-    def gradient_ng(self, sample_point, sample_label):
+    def gradient_ng(self, point, label):
         """
         "Numerical Gradient"
 
@@ -176,8 +181,8 @@ class LNN:
         Inside the first loop is the numerical gradient of that parameter:
         give a small change 'h', see how f, the loss function, change.
 
-        :param sample_point: [ sample_size * D ], np.array
-        :param sample_label: [ sample_size * K ], np.array
+        :param point: [ sample_size * D ], np.array
+        :param label: [ sample_size * K ], np.array
         :return: dictionary, gradient for all the parameters
         """
         grad = {}
@@ -193,10 +198,10 @@ class LNN:
                 tmp_val = self.para[key][idx]
 
                 self.para[key][idx] = float(tmp_val) + h
-                fxh1 = self.CRE(sample_point, sample_label)  # f(x+h)
+                fxh1 = self.CRE(point, label)  # f(x+h)
 
                 self.para[key][idx] = float(tmp_val) - h
-                fxh2 = self.CRE(sample_point, sample_label)  # f(x-h)
+                fxh2 = self.CRE(point, label)  # f(x-h)
 
                 grad[key][idx] = (fxh1 - fxh2) / (2 * h)
 
@@ -205,7 +210,7 @@ class LNN:
 
         return grad
 
-    def gradient_bp(self, sample_point, sample_label):
+    def gradient_bp(self, point, label):
         """
         "Backpropagation"
 
@@ -227,15 +232,15 @@ class LNN:
           da_i  <---[dw_i,db_i]---  dz_i  <---[d_activation_func]---  da_(i+1)
         The only difference is that the things we got now is "d", gradient.
 
-        :param sample_point: [ sample_size * D ], np.array
-        :param sample_label: [ sample_size * K ], np.array
+        :param point: [ sample_size * D ], np.array
+        :param label: [ sample_size * K ], np.array
         :return: dictionary, gradient for all the parameter
         """
         grad = {}
 
         # forward
         # a0 -> w0,b0 -> z0 -> a1 -> w1,b1 -> z1 -> a2
-        a = {0: sample_point}
+        a = {0: point}
         for l in range(self.L):
             z = np.dot(a[l], self.para['w' + str(l)]) + self.para['b' + str(l)]
             a[l + 1] = self.activation_func[l](z)
@@ -245,7 +250,7 @@ class LNN:
         da = 0
         for l in range(self.L-1, -1, -1):
             if self.activation_func[l] == self.softmax:     # softmax with loss
-                dz = (a[l + 1] - sample_label) / len(sample_point)
+                dz = (a[l + 1] - label) / len(point)
             elif self.activation_func[l] == self.relu:      # relu
                 dz = da * (a[l + 1] != 0)
             else:                                           # sigmoid
@@ -343,74 +348,110 @@ class LNN:
     """ Data Processing """
 
     @staticmethod
-    def normalize(sample_point, min_val=-1, max_val=1):
+    def normalize(point, min_val=-1, max_val=1):
         """
         Adjusting values measured on different scales to a notionally common
         scale ("min_val" - "max_val" for this case). Notes that the distribution
         of the point do not change.
 
-        :param sample_point: [ sample_size * D ], np.array
+        :param point: [ sample_size * D ], np.array
         :param min_val: minimum of the sample point after normalize, int
         :param max_val: maximum of the sample point after normalize, int
         :return: the sample point after normalize, [ sample_size * D ], np.array
         """
-        min_x = np.min(sample_point)
-        max_x = np.max(sample_point)
+        min_x = np.min(point)
+        max_x = np.max(point)
         scale = float(max_val - min_val) / (max_x - min_x)
         shift = float((max_val + min_val) - (max_x + min_x)) / 2
 
-        return (sample_point + shift) * scale  # [ sample_size * D ], np.array
+        return (point + shift) * scale  # [ sample_size * D ], np.array
 
     """ Trainer """
 
-    def result(self, train_point, train_label, test_point, test_label, i):
-        """
-        Store train result and print state
-
-        :param train_point: [ sample_size * D ], np.array
-        :param train_label: [ sample_size * K ], np.array
-        :param test_point: [ sample_size * D ], np.array
-        :param test_label: [ sample_size * K ], np.array
-        :param i: train number/epoch index
-        """
-        # store result
-        train_loss = self.CRE(train_point, train_label)
-        train_accuracy = self.accuracy(train_point, train_label)
-        self.train_loss.append(train_loss)
-        self.train_accuracy.append(train_accuracy)
-
-        test_loss = self.CRE(test_point, test_label)
-        test_accuracy = self.accuracy(test_point, test_label)
-        self.test_loss.append(test_loss)
-        self.test_accuracy.append(test_accuracy)
-
-        # print result
-        """
-        print('%4d\tL: %10.7f\tA: %7.5f\tL: %10.7f\tA: %7.5f' %
-              (i, train_loss, 100 * train_accuracy,
-               test_loss, 100 * test_accuracy))
-        """
-
-
-    def train(self, train_point, train_label, test_point, test_label,
-              optimizer_para, train_number=5000,
-              gradient=gradient_bp, optimizer=Adam):
+    def train(self, train_point, train_label, optimizer_para,
+              valid_point=None, valid_label=None,
+              test_point=None, test_label=None,
+              gradient=gradient_bp, optimizer=Adam,
+              epoch=20000, stop_point=500):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
 
         :param train_point: [ sample_size * D ], np.array
         :param train_label: [ sample_size * K ], np.array
+        :param optimizer_para: the parameter dictionary for the optimizer
+        :param valid_point: [ sample_size * D ], np.array
+        :param valid_label: [ sample_size * K ], np.array
         :param test_point: [ sample_size * D ], np.array
         :param test_label: [ sample_size * K ], np.array
-        :param optimizer_para: the parameter dictionary for the optimizer
-        :param train_number: number of iteration
         :param gradient: choose which gradient calculator will be use
         :param optimizer: choose which optimizer will be use
+        :param epoch: number of iteration
+        :param stop_point: stop training after "stop_point" number of
+            iteration such that the accuracy of validation set does not increase
         """
-        for i in range(1, train_number+1):
-            if i > train_number-110:
-                self.result(train_point, train_label, test_point, test_label, i)
-            # train
-            grad = gradient(self, train_point, train_label)
-            optimizer(self, grad, optimizer_para)
+        # variable use to store result including time and accuracy
+        train_time = np.zeros([epoch])
+        test_time = []
+
+        #### train_loss = np.zeros([epoch])
+        valid_loss = np.zeros([epoch])
+        #### test_loss = []
+
+        #### train_accuracy = np.zeros([epoch])
+        #### valid_accuracy = np.zeros([epoch])
+        test_accuracy = []
+
+        # train
+        time_track = 0
+        stop_track = 0
+        loss_track = 0
+        for i in range(epoch):
+            begin = time.time()
+
+            # Main part ===============================================
+            optimizer(self, gradient(self, train_point, train_label),
+                      optimizer_para)
+            # =========================================================
+
+            time_track += time.time() - begin
+            train_time[i] = time_track
+
+            """
+            if train_label is not None:
+                train_loss[i] = self.CRE(train_point, train_label)
+                train_accuracy[i] = self.test(train_point, train_label)
+            """
+            if valid_label is not None:
+                valid_loss[i] = self.CRE(valid_point, valid_label)
+                #### valid_accuracy[i] = self.test(valid_point, valid_label)
+
+            # Early Stopping ===================================================
+            if valid_label is None:
+                continue
+            elif stop_point < stop_track:
+                break
+            elif valid_loss[i] > loss_track:
+                stop_track = 0
+                loss_track = valid_loss[i]
+            else:
+                stop_track += 1
+            # ==================================================================
+
+        if test_label is not None:
+            #### test_loss.append(self.CRE(test_point, test_label))
+            begin = time.time()
+            test_accuracy.append(self.test(test_point, test_label))
+            test_time.append(time.time() - begin)
+
+        # store
+        self.train_time = train_time
+        self.test_time = test_time
+
+        #### self.train_loss = train_loss
+        #### self.valid_loss = valid_loss
+        #### self.test_loss = test_loss
+
+        #### self.train_accuracy = train_accuracy
+        #### self.valid_accuracy = valid_accuracy
+        self.test_accuracy = test_accuracy
