@@ -30,14 +30,12 @@ class LNN:
         self.initialize_network()
 
         # result
+        self.iteration = []
         self.train_time = []
-        self.test_time = []
         self.train_loss = []
         self.valid_loss = []
-        self.test_loss  = []
         self.train_accuracy = []
         self.valid_accuracy = []
-        self.test_accuracy  = []
 
     def initialize_network(self):
         """
@@ -370,88 +368,56 @@ class LNN:
 
     def train(self, train_point, train_label, optimizer_para,
               valid_point=None, valid_label=None,
-              test_point=None, test_label=None,
-              gradient=gradient_bp, optimizer=Adam,
-              epoch=20000, stop_point=500):
+              gradient=gradient_bp, optimizer=RMSprop,
+              epoch=20000, stop_point=300):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
 
-        :param train_point: [ sample_size * D ], np.array
-        :param train_label: [ sample_size * K ], np.array
-        :param optimizer_para: the parameter dictionary for the optimizer
-        :param valid_point: [ sample_size * D ], np.array
-        :param valid_label: [ sample_size * K ], np.array
-        :param test_point: [ sample_size * D ], np.array
-        :param test_label: [ sample_size * K ], np.array
-        :param gradient: choose which gradient calculator will be use
-        :param optimizer: choose which optimizer will be use
-        :param epoch: number of iteration
-        :param stop_point: stop training after "stop_point" number of
+        Args:
+            train_point: [ sample_size * D ], np.array
+            train_label: [ sample_size * K ], np.array
+            optimizer_para: the parameter dictionary for the optimizer
+            valid_point: [ sample_size * D ], np.array
+            valid_label: [ sample_size * K ], np.array
+            gradient: choose which gradient calculator will be use
+            optimizer: choose which optimizer will be use
+            epoch: number of iteration
+            stop_point: stop training after "stop_point" number of
             iteration such that the accuracy of validation set does not increase
         """
-        # variable use to store result including time and accuracy
-        train_time = np.zeros([epoch])
-        test_time = []
-
-        #### train_loss = np.zeros([epoch])
-        valid_loss = np.zeros([epoch])
-        #### test_loss = []
-
-        #### train_accuracy = np.zeros([epoch])
-        #### valid_accuracy = np.zeros([epoch])
-        test_accuracy = []
-
-        # train
         time_track = 0
         stop_track = 0
-        loss_track = 0
+        loss_max = 1000
         for i in range(epoch):
+            if stop_point <= stop_track: break
+
             begin = time.time()
 
-            # Main part ===============================================
+            # Main part ========================================================
             optimizer(self, gradient(self, train_point, train_label),
                       optimizer_para)
-            # =========================================================
-
-            time_track += time.time() - begin
-            train_time[i] = time_track
-
-            """
-            if train_label is not None:
-                train_loss[i] = self.CRE(train_point, train_label)
-                train_accuracy[i] = self.test(train_point, train_label)
-            """
-            if valid_label is not None:
-                valid_loss[i] = self.CRE(valid_point, valid_label)
-                #### valid_accuracy[i] = self.test(valid_point, valid_label)
-
-            # Early Stopping ===================================================
-            if valid_label is None:
-                continue
-            elif stop_point < stop_track:
-                break
-            elif valid_loss[i] > loss_track:
-                stop_track = 0
-                loss_track = valid_loss[i]
-            else:
-                stop_track += 1
             # ==================================================================
 
-        if test_label is not None:
-            #### test_loss.append(self.CRE(test_point, test_label))
-            begin = time.time()
-            test_accuracy.append(self.test(test_point, test_label))
-            test_time.append(time.time() - begin)
+            time_track += time.time() - begin
+            self.train_time.append(time_track)
 
-        # store
-        self.train_time = train_time
-        self.test_time = test_time
+            """ Recording """
 
-        #### self.train_loss = train_loss
-        #### self.valid_loss = valid_loss
-        #### self.test_loss = test_loss
+            self.iteration.append(i)
+            if train_label is not None:
+                self.train_loss.append(self.CRE(train_point, train_label))
+                self.train_accuracy.append(self.test(train_point, train_label))
+            if valid_label is not None:
+                self.valid_loss.append(self.CRE(valid_point, valid_label))
+                self.valid_accuracy.append(self.test(valid_point, valid_label))
+            # print("{}\t{}".format(i, self.valid_accuracy[-1]))
 
-        #### self.train_accuracy = train_accuracy
-        #### self.valid_accuracy = valid_accuracy
-        self.test_accuracy = test_accuracy
+            """ Early Stopping """
+
+            if valid_label is None: continue
+            if self.valid_loss[-1] < loss_max:
+                stop_track = 0
+                loss_max = self.valid_loss[-1]
+            else:
+                stop_track += 1

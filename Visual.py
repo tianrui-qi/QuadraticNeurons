@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
 
-plt.rcParams["figure.dpi"] = 400
+# plt.rcParams["figure.dpi"] = 400
 
 class Visual:
     def __init__(self, sample_point, sample_label, mu_set, cov_set):
