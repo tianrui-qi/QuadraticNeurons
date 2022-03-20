@@ -6,41 +6,41 @@ from QNN import QNN
 import os
 import numpy as np
 
-sample_number = 100
+sample_number = 50
 
 
 def set_method(j):
-    LNN_neuron_num_1 = {0: K}
-    LNN_neuron_num_2_10 = {0: 10, 1: K}
+    LNN_neuron_num_1     = {0: K}
+    LNN_neuron_num_2_10  = {0: 10, 1: K}
     LNN_neuron_num_2_100 = {0: 100, 1: K}
-    QNN_neuron_num_1 = {0: K}
+    QNN_neuron_num_1     = {0: K}
 
     LNN_activation_func_1 = {0: LNN.softmax}
     LNN_activation_func_2 = {0: LNN.relu, 1: LNN.softmax}
     QNN_activation_func_1 = {0: QNN.softmax}
 
     if j == 0:
-        string = "EM"
+        string = "        EM"
         method = EM(K)
     elif j == 1:
-        string = "L({}-{})".format(D, K)
-        method = LNN(D, LNN_neuron_num_1, LNN_activation_func_1)
+        string = "    Q({}-{})".format(D, K)
+        method = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
     elif j == 2:
-        string = "L({}-10-{})".format(D, K)
-        method = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
-    elif j == 3:
         string = "L({}-100-{})".format(D, K)
         method = LNN(D, LNN_neuron_num_2_100, LNN_activation_func_2)
+    elif j == 3:
+        string = " L({}-10-{})".format(D, K)
+        method = LNN(D, LNN_neuron_num_2_10, LNN_activation_func_2)
     else:
-        string = "Q({}-{})".format(D, K)
-        method = QNN(D, QNN_neuron_num_1, QNN_activation_func_1)
+        string = "    L({}-{})".format(D, K)
+        method = LNN(D, LNN_neuron_num_1, LNN_activation_func_1)
 
     return string, method
 
 
 if not os.path.exists('complex'): os.mkdir('complex')
 for D in (2, 3):
-    for K in (4, 6, 8):
+    for K in (5, 8):
         test_accuracy = np.zeros([sample_number, 5])
         test_time     = np.zeros([sample_number, 5])
         train_time    = np.zeros([sample_number, 5])
@@ -77,7 +77,6 @@ for D in (2, 3):
 
             for j in range(5):
                 string, method = set_method(j)
-                print(string)
                 if j == 0:
                     method.train(test_point, train_label=test_label,
                                  valid_point=test_point, valid_label=test_label,
@@ -94,9 +93,10 @@ for D in (2, 3):
                                  valid_point=valid_point, valid_label=valid_label,
                                  test_point=test_point, test_label=test_label)
                 test_accuracy[S][j] = method.test_accuracy[0]
-                print(test_accuracy[S][j] * 100)
                 test_time[S][j]     = method.test_time[0]
                 train_time[S][j]    = np.max(method.train_time)
+
+                print("{}\t{}".format(string, test_accuracy[S][j] * 100))
 
             np.savetxt("complex/D={}, K={}, test_accuracy.csv".format(D, K),
                        test_accuracy, delimiter=",")
