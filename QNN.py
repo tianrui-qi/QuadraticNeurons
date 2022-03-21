@@ -36,6 +36,8 @@ class QNN:
         self.valid_loss = []
         self.train_accuracy = []
         self.valid_accuracy = []
+        self.train_precision = []
+        self.valid_precision = []
 
     def initialize_network(self):
         """
@@ -81,48 +83,6 @@ class QNN:
     def load_NN(self, para, h, m, v):
         self.para, self.h, self.m, self.v = para, h, m, v
 
-    """ Estimator """
-
-    def predict(self, point):
-        """
-        Take "sample_point" as the network's input. Using the current network
-        parameters to predict the label of the "sample_point." Notes that the
-        return value is not the true label like [ 0 0 1 0]. It's the score of
-        each value [ 10 20 30 5 ]. To get the label, still need to take argmax
-        of return value "z"
-
-        :param point:  [ sample_size * D ], np.array
-        :return: [ sample_size * K ], np.array
-        """
-        a = point
-        for l in range(self.L):
-            zr = np.dot(a,    self.para['wr'+str(l)]) + self.para['br'+str(l)]
-            zg = np.dot(a,    self.para['wg'+str(l)]) + self.para['bg'+str(l)]
-            zb = np.dot(a**2, self.para['wb'+str(l)]) + self.para['bb'+str(l)]
-            z = np.multiply(zr, zg) + zb
-            a = self.activation_func[l](z)
-        return a
-
-    def test(self, point, label):
-        """
-        Give a sample point, get the predicting label from the network. Then,
-        compare the predicting label with the correct label "sample_label", and
-        return the accuracy of the prediction
-
-        correct = 0
-        for n in range(sample_size):
-            if y[n] == t[n]:
-                correct = correct + 1
-        accuracy = correct / sample_size
-
-        :param point: [ sample_size * D ], np.array
-        :param label: [ sample_size * K ], np.array
-        :return: accuracy of the network prediction (float)
-        """
-        y = np.argmax(self.predict(point), axis=1)
-        t = np.argmax(label, axis=1)
-        return np.sum(y == t) / point.shape[0]
-
     """ Three Activation Functions """
 
     @staticmethod
@@ -143,34 +103,6 @@ class QNN:
 
         x -= np.max(x)
         return np.exp(x) / np.sum(np.exp(x))
-
-    """ One Loss Function """
-
-    def CRE(self, point, label):
-        """
-        Cross Entropy Error
-
-        The t is correct label. The first layer of for loop is using to
-        traverse entire sample, and the second layer of for loop is using to
-        control which y value of that sample will affect the loss value. The
-        "y" value will affect the loss value only when it's in the same
-        position of correct label.
-
-        Example,
-                 t_i = [  0  0  1  0 ]       y_i = [ 10 20 10  2 ]
-        then, for sample point i,
-        loss_i = ( 0 * 10 ) + ( 0 * 20 ) + ( 1 * 10 ) + ( 0 * 2 ) = 1 * 10 = 10
-
-        :param point: [ sample_size * D ], np.array
-        :param label: [ sample_size * K ], np.array
-        :return: loss value (float)
-        """
-        y = self.predict(point)
-        t = label
-
-        delta = 1e-10
-        return -(np.sum(np.multiply(t, np.log(y + delta))) /
-                 point.shape[0])
 
     """ Two Gradient Calculator """
 
@@ -342,33 +274,11 @@ class QNN:
             self.v[key] += (1.0 - para["beta2"]) * (grad[key]**2 - self.v[key])
             self.para[key] -= lr_t*self.m[key] / (np.sqrt(self.v[key]) + delta)
 
-    """ Data Processing """
-
-    @staticmethod
-    def normalize(point, min_val=-1, max_val=1):
-        """
-        Adjusting values measured on different scales to a notionally common
-        scale ("min_val" - "max_val" for this case). Notes that the distribution
-        of the point do not change.
-
-        :param point: [ sample_size * D ], np.array
-        :param min_val: minimum of the sample point after normalize, int
-        :param max_val: maximum of the sample point after normalize, int
-        :return: the sample point after normalize, [ sample_size * D ], np.array
-        """
-        min_x = np.min(point)
-        max_x = np.max(point)
-        scale = float(max_val - min_val) / (max_x - min_x)
-        shift = float((max_val + min_val) - (max_x + min_x)) / 2
-
-        return (point + shift) * scale  # [ sample_size * D ], np.array
-
     """ Trainer """
 
     def train(self, train_point, train_label, optimizer_para,
-              valid_point=None, valid_label=None,
-              gradient=gradient_bp, optimizer=RMSprop,
-              epoch=20000, stop_point=300):
+              valid_point=None, valid_label=None, optimizer=RMSprop,
+              epoch=20000, stop_point=200):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -379,7 +289,6 @@ class QNN:
             optimizer_para: the parameter dictionary for the optimizer
             valid_point: [ sample_size * D ], np.array
             valid_label: [ sample_size * K ], np.array
-            gradient: choose which gradient calculator will be use
             optimizer: choose which optimizer will be use
             epoch: number of iteration
             stop_point: stop training after "stop_point" number of
@@ -394,7 +303,7 @@ class QNN:
             begin = time.time()
 
             # Main part ========================================================
-            optimizer(self, gradient(self, train_point, train_label),
+            optimizer(self.gradient_bp(train_point, train_label),
                       optimizer_para)
             # ==================================================================
 
@@ -406,10 +315,12 @@ class QNN:
             self.iteration.append(i)
             if train_label is not None:
                 self.train_loss.append(self.CRE(train_point, train_label))
-                self.train_accuracy.append(self.test(train_point, train_label))
+                self.train_accuracy.append(self.accuracy(train_point, train_label))
+                self.train_precision.append(self.precision(train_point, train_label))
             if valid_label is not None:
                 self.valid_loss.append(self.CRE(valid_point, valid_label))
-                self.valid_accuracy.append(self.test(valid_point, valid_label))
+                self.valid_accuracy.append(self.accuracy(valid_point, valid_label))
+                self.valid_precision.append(self.precision(valid_point, valid_label))
             # print("{}\t{}".format(i, self.valid_accuracy[-1]))
 
             """ Early Stopping """
@@ -420,3 +331,70 @@ class QNN:
                 loss_max = self.valid_loss[-1]
             else:
                 stop_track += 1
+
+    """ Estimator """
+
+    def predict(self, point):
+        """
+        Take "sample_point" as the network's input. Using the current network
+        parameters to predict the label of the "sample_point." Notes that the
+        return value is not the true label like [ 0 0 1 0]. It's the score of
+        each value [ 10 20 30 5 ]. To get the label, still need to take argmax
+        of return value "z"
+
+        :param point:  [ sample_size * D ], np.array
+        :return: [ sample_size * K ], np.array
+        """
+        a = point
+        for l in range(self.L):
+            zr = np.dot(a,    self.para['wr'+str(l)]) + self.para['br'+str(l)]
+            zg = np.dot(a,    self.para['wg'+str(l)]) + self.para['bg'+str(l)]
+            zb = np.dot(a**2, self.para['wb'+str(l)]) + self.para['bb'+str(l)]
+            z = np.multiply(zr, zg) + zb
+            a = self.activation_func[l](z)
+        return a
+
+    def CRE(self, point, label):
+        """
+        Return the cross entropy error (CRE).
+        """
+        # 1. check the input data
+        if len(point[0]) != self.D or len(label[0]) != self.K: return 0
+
+        # 2. compute the loss
+        y = self.predict(point)     # predict label
+        t = label                   # actual label
+        return -(np.sum(np.multiply(t, np.log(y + 1e-10))) / point.shape[0])
+
+    def accuracy(self, point, label):
+        """
+        Return the accuracy.
+        """
+        # 1. check the input data
+        if len(point[0]) != self.D or len(label[0]) != self.K: return 0
+
+        # 2. compute the accuracy
+        t = np.argmax(label, axis=1)                # actual label
+        y = np.argmax(self.predict(point), axis=1)  # predict label
+        return np.sum(y == t) / len(label)  # accuracy, float
+
+    def precision(self, point, label):
+        """
+        Compute the precision of each cluster and return the average precision.
+        """
+        # 1. check the input data
+        if len(point[0]) != self.D or len(label[0]) != self.K: return 0
+
+        # 2. compute the precision
+        t = np.argmax(label, axis=1)                # actual label
+        y = np.argmax(self.predict(point), axis=1)  # predict label
+        precision = 0
+        for k in range(self.K):     # find the precision of each cluster
+            TP = 0  # Predict class == k, Actual class == k
+            FP = 0  # Predict class == k, Actual class != k
+            for n in range(len(point)):
+                if y[n] != k: continue      # means predict class != k
+                if t[n] == y[n]: TP += 1    # Actual class == k
+                if t[n] != y[n]: FP += 1    # Actual class != k
+            precision += TP / (TP + FP)
+        return precision / self.K           # average precision

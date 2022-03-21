@@ -96,7 +96,8 @@ def main():
     for i in range(1):
         """ generate sample and label """
 
-        N_k = [np.random.randint(20000, 30000) for k in range(K)]
+        N_k = [np.random.randint(2000, 3000) for k in range(K-1)]
+        N_k.insert(0, 10000)
         mu_set = np.array([[0.0, 0.0],
                            [-1.0, 2.0],
                            [1.0, -2.0]])
@@ -136,16 +137,16 @@ def main():
                 accuracy = 0
                 while accuracy < 0.8:
                     method.train(train_point)
-                    accuracy = method.test(test_point, test_label)
+                    accuracy = method.accuracy(test_point, test_label)
             else:
                 label.append(string)
                 method.train(train_point, train_label, optimizer_para,
                              valid_point, valid_label)
 
-            print("{}\t{}".format(string, method.test(test_point, test_label)))
+            print("{}\t{}".format(string,
+                                  method.precision(test_point, test_label)))
 
-            fig = visual.plot_DB(method)
-            fig.savefig("special/fig/{}_{}".format(i, string))
+            visual.plot_DB(method).savefig("special/fig/{}_{}".format(i, string))
 
             save(train_time, test_time,
                  train_loss, valid_loss, test_loss,
@@ -154,7 +155,7 @@ def main():
 
         ax, fig = plt.subplots()
         for j in range(3):
-            fig.plot(valid_accuracy[j])
+            fig.plot(train_loss[j])
         plt.legend(label)
         plt.grid(True)
         plt.xscale("log")

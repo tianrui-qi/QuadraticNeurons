@@ -8,7 +8,8 @@ class EM:
     Example:
         em = EM(K)
         em.train(train_point)
-        print("EM accuracy: %7.5f" % em.test(test_point, test_label))
+        print("EM accuracy: %7.5f" % em.accuracy(test_point, test_label))
+        print("EM precision: %7.5f" % em.precision(test_point, test_label))
     """
 
     def __init__(self, K):
@@ -18,6 +19,8 @@ class EM:
         self.mu_set  = None     # mean of each mixture, [ K * D ]
         self.cov_set = None     # covariance of each mixture, [ K * D * D ]
         self.prio_p  = None     # prior probability of each mixture, [ K ]
+
+    """ Trainer """
 
     def E_step(self, point):
         """
@@ -59,8 +62,31 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def predict(self, point):
-        return self.E_step(point)
+    def train(self, train_point, epoch=2000, epsilon=1e-10):
+        """
+        Repeat E step and M step for "epoch" number of iteration.
+
+        Args:
+            train_point: [ sample_size * D ], np.array
+            epoch: number of iteration, int
+            epsilon: stop training when the norm of change of mu < epsilon
+        """
+        # initialize all parameters
+        self.D       = len(train_point[0])                  # int
+        self.mu_set  = np.random.randn(self.K, self.D)      # [ K * D ]
+        self.cov_set = np.array([np.eye(self.D)] * self.K)  # [ K * D * D ]
+        self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
+
+        # train
+        old_mu = self.mu_set.copy()
+        for i in range(epoch):
+            self.M_step(train_point, self.E_step(train_point))
+
+            # breakpoint
+            if np.linalg.norm(self.mu_set - old_mu) < epsilon: break
+            old_mu = self.mu_set.copy()
+
+    """ Estimator """
 
     def order_correction(self, point, label):
         """
@@ -80,17 +106,17 @@ class EM:
         order = []  # [ K ], store the correct order
         accuracy = 0
 
-        # get the correct order
+        # 1. get the correct order
         t = np.argmax(label, axis=1)
         for j in list(itertools.permutations([i for i in range(self.K)],
                                              self.K)):
-            y = np.argmax(self.E_step(point)[:, j], axis=1)
+            y = np.argmax(self.predict(point)[:, j], axis=1)
             current_accuracy = np.sum(y == t) / len(label)
             if current_accuracy > accuracy:
                 order = j
                 accuracy = current_accuracy
 
-        # change the order of mu, cov, prior probability according to the order
+        # 2. change the order of mu, cov, prior probability
         for data in (self.mu_set, self.cov_set, self.prio_p):
             temp = np.copy(data)    # store the old data
             for i in range(self.K):
@@ -98,42 +124,50 @@ class EM:
 
         return accuracy
 
-    def test(self, point, label, order_correction=True):
+    def predict(self, point):
+        return self.E_step(point)
+
+    def accuracy(self, point, label, order_correction=True):
         """
-        Test the accuracy using the current EM.
-        If "order_correction" set as true, call the help function
-        "self.order_correction" to correct the order of parameters. You can also
-        call "self.order_correction" before test by yourself.
+        Return the accuracy
         """
-        if self.prio_p is None: return 0    # means EM has not been trained
+        # 1. check the input data
+        if self.prio_p is None:
+            return 0  # EM has not been trained
+        if len(point[0]) != self.D or len(label[0]) != self.K:
+            return 0  # the input label or point is not valid
 
-        if order_correction: return self.order_correction(point, label)
+        # 2. correct the order of parameters
+        if order_correction: self.order_correction(point, label)
 
-        t = np.argmax(label, axis=1)
-        y = np.argmax(self.E_step(point), axis=1)
+        # 3. compute the accuracy
+        t = np.argmax(label, axis=1)                # actual label
+        y = np.argmax(self.predict(point), axis=1)  # predict label
+        return np.sum(y == t) / len(label)          # accuracy, float
 
-        return np.sum(y == t) / len(label)  # return the accuracy, float
-
-    def train(self, train_point, epoch=2000, epsilon=1e-10):
+    def precision(self, point, label, order_correction=True):
         """
-        Repeat E step and M step for "epoch" number of iteration.
-
-        Args:
-            train_point: [ sample_size * D ], np.array
-            epoch: number of iteration, int
-            epsilon: stop training when the norm of change of mu < epsilon
+        Compute the precision of each cluster and return the average precision.
         """
-        # initialize all parameters
-        self.D       = len(train_point[0])
-        self.mu_set  = np.random.randn(self.K, self.D)      # [ K * D ]
-        self.cov_set = np.array([np.eye(self.D)] * self.K)  # [ K * D * D ]
-        self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
+        # 1. check the input data
+        if self.prio_p is None:
+            return 0  # EM has not been trained
+        if len(point[0]) != self.D or len(label[0]) != self.K:
+            return 0  # the input label or point is not valid
 
-        # train
-        old_mu = self.mu_set.copy()
-        for i in range(epoch):
-            self.M_step(train_point, self.E_step(train_point))
+        # 2. correct the order of parameters
+        if order_correction: self.order_correction(point, label)
 
-            # breakpoint
-            if np.linalg.norm(self.mu_set - old_mu) < epsilon: break
-            old_mu = self.mu_set.copy()
+        # 3. compute the precision
+        t = np.argmax(label, axis=1)                # actual label
+        y = np.argmax(self.predict(point), axis=1)  # predict label
+        precision = 0
+        for k in range(self.K):     # find the precision of each cluster
+            TP = 0  # Predict class == k, Actual class == k
+            FP = 0  # Predict class == k, Actual class != k
+            for n in range(len(point)):
+                if y[n] != k: continue      # means predict class != k
+                if t[n] == y[n]: TP += 1    # Actual class == k
+                if t[n] != y[n]: FP += 1    # Actual class != k
+            precision += TP / (TP + FP)
+        return precision / self.K           # average precision
