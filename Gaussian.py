@@ -69,6 +69,8 @@ class Gaussian:
         self.point = np.array( [x[0] for x in sample_set] )
         self.label = np.array( [x[1] for x in sample_set] )
 
+        return self.point, self.label
+
     def split_sample(self):
         if self.point is None: return
         point, label = self.point, self.label

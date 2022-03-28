@@ -17,7 +17,7 @@ def set_sample():
         a = np.random.random((D, D)) * 2 - 1
         cov = np.dot(a, a.T) + np.dot(a, a.T)
         cov_set.append(cov)
-    N_k = [np.random.randint(6000, 9000) for k in range(K - 1)]
+    N_k = [np.random.randint(10000, 15000) for k in range(K - 1)]
     N_k.insert(0, 50000)
 
     gaussian = Gaussian(N_k, mu_set, cov_set)

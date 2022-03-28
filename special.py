@@ -36,7 +36,6 @@ def set_method(j):
 
     return string, method
 
-
 def save(train_time, test_time,
          train_loss, valid_loss, test_loss,
          train_accuracy, valid_accuracy, test_accuracy,
@@ -75,7 +74,6 @@ def save(train_time, test_time,
         # accuracy
         train_accuracy.append(method.train_accuracy)
         valid_accuracy.append(method.valid_accuracy)
-
 
 def main():
     N_k = [np.random.randint(2000, 3000) for k in range(K-1)]
