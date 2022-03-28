@@ -162,12 +162,41 @@ class EM:
         t = np.argmax(label, axis=1)                # actual label
         y = np.argmax(self.predict(point), axis=1)  # predict label
         precision = 0
-        for k in range(self.K):     # find the precision of each cluster
+        for k in range(1, self.K):     # find the precision of each cluster
             TP = 0  # Predict class == k, Actual class == k
             FP = 0  # Predict class == k, Actual class != k
             for n in range(len(point)):
-                if y[n] != k: continue      # means predict class != k
-                if t[n] == y[n]: TP += 1    # Actual class == k
-                if t[n] != y[n]: FP += 1    # Actual class != k
+                if y[n] != k: continue
+                if t[n] == y[n]: TP += 1
+                if t[n] != y[n]: FP += 1
+            if TP + FP == 0: continue  # avoid divide zero
             precision += TP / (TP + FP)
-        return precision / self.K           # average precision
+        return precision / (self.K - 1)
+
+    def recall(self, point, label, order_correction=True):
+        """
+        Compute the recall of each cluster and return the average recall.
+        """
+        # 1. check the input data
+        if self.prio_p is None:
+            return 0  # EM has not been trained
+        if len(point[0]) != self.D or len(label[0]) != self.K:
+            return 0  # the input label or point is not valid
+
+        # 2. correct the order of parameters
+        if order_correction: self.order_correction(point, label)
+
+        # 3. compute the recall
+        t = np.argmax(label, axis=1)                # actual label
+        y = np.argmax(self.predict(point), axis=1)  # predict label
+        recall = 0
+        for k in range(1, self.K):     # find the recall of each cluster
+            TP = 0  # Predict class == k, Actual class == k
+            FN = 0  # Predict class != k, Actual class == k
+            for n in range(len(point)):
+                if t[n] != k: continue
+                if t[n] == y[n]: TP += 1
+                if t[n] != y[n]: FN += 1
+            if TP + FN == 0: continue  # avoid divide zero
+            recall += TP / (TP + FN)
+        return recall / (self.K - 1)
