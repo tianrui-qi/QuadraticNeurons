@@ -17,7 +17,7 @@ class Gaussian:
 
         # generate sample
         gaussian = Gaussian(N_k, mu_set, cov_set)
-        sample_point, sample_label = train_gaussian.generate_sample()
+        point, label = gaussian.point, gaussian.label
     """
 
     def __init__(self, N_k, mu_set, cov_set):
@@ -34,8 +34,10 @@ class Gaussian:
         self.mu_set  = mu_set                       # [ K * D ]
         self.cov_set = cov_set                      # [ K * D * D ]
 
-        self.sample_point = None    # [ N * D ]
-        self.sample_label = None    # [ N * K ]
+        self.point = None    # [ N * D ]
+        self.label = None    # [ N * K ]
+
+        self.generate_sample()
 
     def generate_sample(self):
         """
@@ -64,22 +66,36 @@ class Gaussian:
                 sample_set.append((point[n], label[n]))
         random.shuffle(sample_set)
 
-        self.sample_point = np.array( [x[0] for x in sample_set] )
-        self.sample_label = np.array( [x[1] for x in sample_set] )
+        self.point = np.array( [x[0] for x in sample_set] )
+        self.label = np.array( [x[1] for x in sample_set] )
 
-        return self.sample_point, self.sample_label
+    def split_sample(self):
+        if self.point is None: return
+        point, label = self.point, self.label
+
+        index_1 = int(0.5 * len(point))
+        index_2 = int(0.7 * len(point))
+        train_point = np.array([point[i] for i in range(index_1)])
+        train_label = np.array([label[i] for i in range(index_1)])
+        valid_point = np.array([point[i] for i in range(index_1, index_2)])
+        valid_label = np.array([label[i] for i in range(index_1, index_2)])
+        test_point = np.array([point[i] for i in range(index_2, len(point))])
+        test_label = np.array([label[i] for i in range(index_2, len(point))])
+
+        return train_point, train_label, valid_point, valid_label, \
+               test_point, test_label
 
     def bayes_inference(self):
-        if self.sample_point is None: return
+        if self.point is None: return
 
         post_p = np.zeros((self.N, self.K))     # [ N * K ]
         for k in range(self.K):
             post_p[:, k] = self.prio_p[k] * \
-                           st.multivariate_normal.pdf(self.sample_point,
+                           st.multivariate_normal.pdf(self.point,
                                                       self.mu_set[k],
                                                       self.cov_set[k],
                                                       allow_singular=True)
-        t = np.argmax(self.sample_label, axis=1)
+        t = np.argmax(self.label, axis=1)
         y = np.argmax(post_p, axis=1)
 
         return np.sum(y == t) / self.N
