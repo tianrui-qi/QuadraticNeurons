@@ -1,1 +1,0 @@
-# QNN-approach-for-GMM
