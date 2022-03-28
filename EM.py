@@ -8,8 +8,10 @@ class EM:
     Example:
         em = EM(K)
         em.train(train_point)
-        print("EM accuracy: %7.5f" % em.accuracy(test_point, test_label))
+
+        print("EM accuracy: %7.5f"  % em.accuracy(test_point, test_label))
         print("EM precision: %7.5f" % em.precision(test_point, test_label))
+        print("EM recall: %7.5f"    % em.recall(test_point, test_label))
     """
 
     def __init__(self, K):
@@ -62,7 +64,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, epoch=2000, epsilon=1e-10):
+    def train(self, train_point, epoch=20000, epsilon=1e-10):
         """
         Repeat E step and M step for "epoch" number of iteration.
 
@@ -78,13 +80,13 @@ class EM:
         self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
 
         # train
-        old_mu = self.mu_set.copy()
         for i in range(epoch):
+            old_mu = self.mu_set.copy()
+
             self.M_step(train_point, self.E_step(train_point))
 
             # breakpoint
             if np.linalg.norm(self.mu_set - old_mu) < epsilon: break
-            old_mu = self.mu_set.copy()
 
     """ Estimator """
 

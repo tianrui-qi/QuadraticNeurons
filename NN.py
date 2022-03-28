@@ -141,7 +141,7 @@ class NN:
     def load_NN(self, para, h, m, v):
         self.para, self.h, self.m, self.v = para, h, m, v
 
-    """ Three Activation Functions """
+    """ Activation Functions """
 
     @staticmethod
     def relu(x):
@@ -267,7 +267,7 @@ class NN:
         if self.NN_type == "LNN": return self._gradient_LNN(point, label)
         if self.NN_type == "QNN": return self._gradient_QNN(point, label)
 
-    def SGD(self, grad):
+    def _SGD(self, grad):
         """
         "Stochastic Gradient Descent"
 
@@ -278,7 +278,7 @@ class NN:
         for key in grad.keys():
             self.para[key] -= self.opt_para["lr"] * grad[key]
 
-    def AdaGrad(self, grad):
+    def _AdaGrad(self, grad):
         """
         "Adaptive Gradient Algorithm", an improvement basis on "SGD" above
 
@@ -297,7 +297,7 @@ class NN:
             self.para[key] -= self.opt_para["lr"] * grad[key] / \
                               (np.sqrt(self.h[key]) + delta)
 
-    def RMSprop(self, grad):
+    def _RMSprop(self, grad):
         """
         "Root Mean Squared Propagation", an improvement basis on "AdaGrad" above
 
@@ -323,7 +323,7 @@ class NN:
             self.para[key] -= self.opt_para["lr"] * grad[key] / \
                               (np.sqrt(self.h[key]) + delta)
 
-    def Adam(self, grad):
+    def _Adam(self, grad):
         """
         "Adaptive Moment Estimation", an improvement basis on "RMSprop" above
         and momentum
@@ -344,9 +344,15 @@ class NN:
                            (grad[key]**2 - self.v[key])
             self.para[key] -= lr_t*self.m[key] / (np.sqrt(self.v[key]) + delta)
 
+    def optimizer(self, optimizer, grad ):
+        if optimizer == "Adam": self._Adam(grad)
+        elif optimizer == "RMSprop": self._RMSprop(grad)
+        elif optimizer == "AdaGrad": self._AdaGrad(grad)
+        else: self._SGD(grad)
+
     def train(self, train_point, train_label,
               valid_point=None, valid_label=None,
-              opt_para=None, optimizer=Adam, epoch=20000, stop_point=500):
+              opt_para=None, optimizer="Adam", epoch=20000, stop_point=500):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -357,7 +363,7 @@ class NN:
             opt_para: the dictionary store parameter for the optimizer
             valid_point: [ sample_size * D ], np.array
             valid_label: [ sample_size * K ], np.array
-            optimizer: choose which optimizer will be use
+            optimizer: choose optimizer: "Adam", "RMSprop", "AdaGrad", "SGD"
             epoch: number of iteration
             stop_point: stop training after "stop_point" number of
             iteration such that the accuracy of validation set does not increase
@@ -373,7 +379,7 @@ class NN:
             begin = time.time()
 
             # Main part ========================================================
-            optimizer(self, self.gradient(train_point, train_label))
+            self.optimizer(optimizer, self.gradient(train_point, train_label))
             # ==================================================================
 
             time_track += time.time() - begin
@@ -390,7 +396,7 @@ class NN:
                 self.valid_loss.append(self.CRE(valid_point, valid_label))
                 # self.valid_accuracy.append(self.accuracy(valid_point, valid_label))
                 # self.valid_precision.append(self.precision(valid_point, valid_label))
-            # print("{}\t{}".format(i, self.valid_accuracy[-1]))
+            # print("{}\t{}".format(i, self.valid_loss[-1]))
 
             """ Early Stopping """
 
@@ -398,8 +404,7 @@ class NN:
             if self.valid_loss[-1] < loss_max:
                 stop_track = 0
                 loss_max = self.valid_loss[-1]
-            else:
-                stop_track += 1
+            else: stop_track += 1
 
     """ Estimator """
 
