@@ -1,3 +1,4 @@
+from Visual import Visual
 from Gaussian import Gaussian
 from EM import EM
 from NN import NN
@@ -5,24 +6,29 @@ from NN import NN
 import os
 import numpy as np
 
-D = 2
-K = 7
+D = 3
+K = 5
 sample_number = 50
+
 
 def set_sample():
     mu_set = [(np.random.random(D) - 0.5) * 10 for i in range(K - 1)]
-    mu_set.insert(0, [0.0, 0.0])
-    cov_set = [[[30., 0.0], [0.0, 30.]]]
+    # mu_set.insert(0, [0.0, 0.0])
+    # cov_set = [[[40., 0.0], [0.0, 40.]]]
+    mu_set.insert(0, [0.0, 0.0, 0.0])
+    cov_set = [[[40., 0.0, 0.0], [0.0, 40., 0.0], [0.0, 0.0, 40.]]]
     for i in range(K - 1):
         a = np.random.random((D, D)) * 2 - 1
         cov = np.dot(a, a.T) + np.dot(a, a.T)
         cov_set.append(cov)
-    N_k = [np.random.randint(10000, 15000) for k in range(K - 1)]
-    N_k.insert(0, 50000)
+    N_k = [np.random.randint(3000, 6000) for k in range(K - 1)]
+    N_k.insert(0, 20000)
 
     gaussian = Gaussian(N_k, mu_set, cov_set)
+    visual = Visual(gaussian.point, gaussian.label, mu_set, cov_set)
 
-    return gaussian.split_sample()
+    return gaussian, visual
+
 
 def set_method(j):
     neuron_num_1     = {0: K}
@@ -51,36 +57,59 @@ def set_method(j):
     return string, method
 
 
-if not os.path.exists('complex'): os.mkdir('complex')
+def main(accuracy, precision, recall, train_time):
 
-accuracy = np.zeros([sample_number, 5])
-precision = np.zeros([sample_number, 5])
-recall = np.zeros([sample_number, 5])
-train_time = np.zeros([sample_number, 5])
+    for S in range(sample_number):
+        print(D, K, S, "\n   method  | accuracy  | precision | recall    | time")
 
-for S in range(sample_number):
-    print(D, K, S)
-    print("   method  | accuracy  | precision | recall")
+        gaussian, visual = set_sample()
+        train_point, train_label, valid_point, valid_label, \
+        test_point, test_label = gaussian.split_sample()
+        visual.plot_sample().savefig("complex/fig/{}_sample".format(S))
 
-    train_point, train_label, valid_point, valid_label, \
-    test_point, test_label = set_sample()
+        for j in range(5):
+            string, method = set_method(j)
+            if j == 0:
+                method.train(train_point)
+                method.order_correction(train_point, train_label)
+            elif j == 1:
+                method.train(train_point, train_label, valid_point, valid_label)
+            else:
+                method.train(train_point, train_label, valid_point, valid_label,
+                             stop_point=200)
 
-    for j in range(5):
-        string, method = set_method(j)
-        if j == 0: method.train(train_point)
-        else: method.train(train_point, train_label, valid_point, valid_label)
+            accuracy[S][j] = method.accuracy(test_point, test_label)
+            precision[S][j] = method.precision(test_point, test_label)
+            recall[S][j] = method.recall(test_point, test_label)
+            if j != 0:
+                train_time[S][j] = max(method.train_time)
 
-        print("%s | %2.6f | %2.6f | %2.6f"
-              % (string,
-                 method.accuracy(test_point, test_label) * 100,
-                 method.precision(test_point, test_label) * 100,
-                 method.recall(test_point, test_label) * 100))
+            print("%s | %2.6f | %2.6f | %2.6f | %2.6f"
+                  % (string, accuracy[S][j] * 100, precision[S][j] * 100,
+                     recall[S][j] * 100, train_time[S][j]))
 
-    np.savetxt("complex/D={}, K={}, accuracy.csv".format(D, K),
+            if D == 2:
+                visual.plot_DB(method)\
+                    .savefig("complex/fig/{}_{}_DB".format(S, string))
+
+
+if __name__ == "__main__":
+    if not os.path.exists('complex'): os.mkdir('complex')
+    if not os.path.exists('complex/fig'): os.mkdir('complex/fig')
+    if not os.path.exists('complex/result'): os.mkdir('complex/result')
+
+    accuracy   = np.zeros([sample_number, 5])
+    precision  = np.zeros([sample_number, 5])
+    recall     = np.zeros([sample_number, 5])
+    train_time = np.zeros([sample_number, 5])
+
+    main(accuracy, precision, recall, train_time)
+
+    np.savetxt("complex/result/accuracy.csv".format(D, K),
                accuracy, delimiter=",")
-    np.savetxt("complex/D={}, K={}, precision.csv".format(D, K),
+    np.savetxt("complex/result/precision.csv".format(D, K),
                precision, delimiter=",")
-    np.savetxt("complex/D={}, K={}, recall.csv".format(D, K),
+    np.savetxt("complex/result/recall.csv".format(D, K),
                recall, delimiter=",")
-    np.savetxt("complex/D={}, K={}, train_time.csv".format(D, K),
+    np.savetxt("complex/result/train_time.csv".format(D, K),
                train_time, delimiter=",")

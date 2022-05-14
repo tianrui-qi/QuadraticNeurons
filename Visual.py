@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
 
-# plt.rcParams["figure.dpi"] = 400
+plt.rcParams["figure.dpi"] = 200
+
 
 class Visual:
     def __init__(self, sample_point, sample_label, mu_set, cov_set):
@@ -14,27 +15,17 @@ class Visual:
         self.mu_set = mu_set
         self.cov_set = cov_set
 
-        self.color = ("orange", "red", "blue", "green", "cyan", "magenta")
+        self.color = ("gray",    "red",    "blue",   "seagreen", "cyan",
+                      "magenta", "orange", "purple", "pink")
 
         self.legend = [mp.Patch(color=self.color[i],
                                 label="Gaussian_{}".format(i))
                        for i in range(self.K)]
         self.legend[0] = mp.Patch(color=self.color[0], label="Background")
-        self.x_max = 4
-        self.x_min = -5
-        self.y_max = 5
+        self.x_max = 6
+        self.x_min = -6
+        self.y_max = 6
         self.y_min = -6
-        """
-        self.legend = [mp.Patch(color=self.color[i],
-                                label="Gaussian_{}".format(i + 1))
-                       for i in range(self.K)]
-                    
-        edge = 0
-        self.x_max = sample_point[np.argmax(sample_point.T[0])][0] + edge
-        self.x_min = sample_point[np.argmin(sample_point.T[0])][0] - edge
-        self.y_max = sample_point[np.argmax(sample_point.T[1])][1] + edge
-        self.y_min = sample_point[np.argmin(sample_point.T[1])][1] - edge
-        """
 
     def plot_sample(self):
         ax, fig = None, None
@@ -50,11 +41,11 @@ class Visual:
 
         if ax is None: return
         plot_scatter(self.sample_point, self.sample_label, ax, self.color)
-        plt.legend(handles=self.legend)
+        plt.legend(handles=self.legend, fontsize=8)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
 
-        return fig
+        return plt
 
     def plot_DB(self, method):
         if self.D != 2: return
@@ -66,7 +57,7 @@ class Visual:
         """
         plot_decision_boundary(self.K, method.predict, ax, self.color,
                                self.x_min, self.x_max, self.y_min, self.y_max)
-        plt.legend(handles=self.legend)
+        plt.legend(handles=self.legend, fontsize=10)
         plt.axis([self.x_min, self.x_max, self.y_min, self.y_max])
         plt.grid()
 

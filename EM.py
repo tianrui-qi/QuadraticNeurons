@@ -1,19 +1,10 @@
+import time
 import itertools
 import numpy as np
 import scipy.stats as st
 
 
 class EM:
-    """
-    Example:
-        em = EM(K)
-        em.train(train_point)
-
-        print("EM accuracy: %7.5f"  % em.accuracy(test_point, test_label))
-        print("EM precision: %7.5f" % em.precision(test_point, test_label))
-        print("EM recall: %7.5f"    % em.recall(test_point, test_label))
-    """
-
     def __init__(self, K):
         self.K = K      # number of clustering / Gaussian mixture
         self.D = None   # dimension, depend on the input point when training
@@ -21,6 +12,8 @@ class EM:
         self.mu_set  = None     # mean of each mixture, [ K * D ]
         self.cov_set = None     # covariance of each mixture, [ K * D * D ]
         self.prio_p  = None     # prior probability of each mixture, [ K ]
+
+        self.train_time = 0
 
     """ Trainer """
 
@@ -64,7 +57,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, epoch=20000, epsilon=1e-10):
+    def train(self, train_point, epoch=2000, epsilon=1e-8):
         """
         Repeat E step and M step for "epoch" number of iteration.
 
@@ -80,6 +73,7 @@ class EM:
         self.prio_p  = np.ones((self.K, 1)) / self.K        # [ K ]
 
         # train
+        begin = time.time()
         for i in range(epoch):
             old_mu = self.mu_set.copy()
 
@@ -87,6 +81,7 @@ class EM:
 
             # breakpoint
             if np.linalg.norm(self.mu_set - old_mu) < epsilon: break
+        self.train_time = time.time() - begin
 
     """ Estimator """
 
@@ -129,76 +124,28 @@ class EM:
     def predict(self, point):
         return self.E_step(point)
 
-    def accuracy(self, point, label, order_correction=True):
-        """
-        Return the accuracy
-        """
-        # 1. check the input data
-        if self.prio_p is None:
-            return 0  # EM has not been trained
-        if len(point[0]) != self.D or len(label[0]) != self.K:
-            return 0  # the input label or point is not valid
-
-        # 2. correct the order of parameters
-        if order_correction: self.order_correction(point, label)
-
-        # 3. compute the accuracy
+    def test(self, point, label):
         t = np.argmax(label, axis=1)                # actual label
         y = np.argmax(self.predict(point), axis=1)  # predict label
-        return np.sum(y == t) / len(label)          # accuracy, float
 
-    def precision(self, point, label, order_correction=True):
-        """
-        Compute the precision of each cluster and return the average precision.
-        """
-        # 1. check the input data
-        if self.prio_p is None:
-            return 0  # EM has not been trained
-        if len(point[0]) != self.D or len(label[0]) != self.K:
-            return 0  # the input label or point is not valid
-
-        # 2. correct the order of parameters
-        if order_correction: self.order_correction(point, label)
-
-        # 3. compute the precision
-        t = np.argmax(label, axis=1)                # actual label
-        y = np.argmax(self.predict(point), axis=1)  # predict label
-        precision = 0
-        for k in range(1, self.K):     # find the precision of each cluster
+        accuracy = np.sum(y == t) / len(label)
+        precision = []
+        recall = []
+        for k in range(self.K):     # find the precision of each cluster
             TP = 0  # Predict class == k, Actual class == k
             FP = 0  # Predict class == k, Actual class != k
-            for n in range(len(point)):
-                if y[n] != k: continue
-                if t[n] == y[n]: TP += 1
-                if t[n] != y[n]: FP += 1
-            if TP + FP == 0: continue  # avoid divide zero
-            precision += TP / (TP + FP)
-        return precision / (self.K - 1)
-
-    def recall(self, point, label, order_correction=True):
-        """
-        Compute the recall of each cluster and return the average recall.
-        """
-        # 1. check the input data
-        if self.prio_p is None:
-            return 0  # EM has not been trained
-        if len(point[0]) != self.D or len(label[0]) != self.K:
-            return 0  # the input label or point is not valid
-
-        # 2. correct the order of parameters
-        if order_correction: self.order_correction(point, label)
-
-        # 3. compute the recall
-        t = np.argmax(label, axis=1)                # actual label
-        y = np.argmax(self.predict(point), axis=1)  # predict label
-        recall = 0
-        for k in range(1, self.K):     # find the recall of each cluster
-            TP = 0  # Predict class == k, Actual class == k
+            TN = 0  # Predict class != k, Actual class != k
             FN = 0  # Predict class != k, Actual class == k
             for n in range(len(point)):
-                if t[n] != k: continue
-                if t[n] == y[n]: TP += 1
-                if t[n] != y[n]: FN += 1
-            if TP + FN == 0: continue  # avoid divide zero
-            recall += TP / (TP + FN)
-        return recall / (self.K - 1)
+                if y[n] == k and t[n] == k: TP += 1
+                if y[n] == k and t[n] != k: FP += 1
+                if y[n] != k and t[n] != k: TN += 1
+                if y[n] != k and t[n] == k: FN += 1
+
+            if TP + FP == 0: precision.append(0)  # avoid divide zero
+            else: precision.append(TP / (TP + FP))
+
+            if TP + FN == 0: recall.append(0)  # avoid divide zero
+            else: recall.append(TP / (TP + FN))
+
+        return [accuracy, precision, recall]
