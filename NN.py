@@ -346,7 +346,8 @@ class NN:
 
     def train(self, train_point, train_label,
               valid_point=None, valid_label=None,
-              opt_para=None, optimizer="Adam", epoch=20000, stop_point=200):
+              opt_para=None, optimizer="Adam",
+              epoch=20000, stop_point=200, step_size=1):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -361,6 +362,8 @@ class NN:
             epoch: number of iteration
             stop_point: stop training after "stop_point" number of
             iteration such that the accuracy of validation set does not increase
+            step_size: frequency of measure the loss on validation set. Not
+                affect result but higher step size follows lower training time
         """
         if opt_para is not None: self.opt_para = opt_para
 
@@ -380,7 +383,6 @@ class NN:
 
             """ Recording """
 
-            step_size = 1
             if i % step_size != 0: continue
             if valid_label is not None:
                 self.valid_loss.append(self.CRE(valid_point, valid_label))
@@ -430,6 +432,9 @@ class NN:
         return -(np.sum(np.multiply(t, np.log(y + 1e-10))) / point.shape[0])
 
     def test(self, point, label):
+        """
+        Return the accuracy, precision, and recall
+        """
         t = np.argmax(label, axis=1)                # actual label
         y = np.argmax(self.predict(point), axis=1)  # predict label
 
