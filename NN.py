@@ -40,7 +40,6 @@ class NN:
         self.initialize()  # initialize para, h, m, v
 
         # result
-        self.iteration = []
         self.train_time = 0
         self.valid_loss = []
 
@@ -347,7 +346,7 @@ class NN:
 
     def train(self, train_point, train_label,
               valid_point=None, valid_label=None,
-              opt_para=None, optimizer="Adam", epoch=20000, stop_point=500):
+              opt_para=None, optimizer="Adam", epoch=20000, stop_point=200):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -381,10 +380,8 @@ class NN:
 
             """ Recording """
 
-            step_size = 100
+            step_size = 1
             if i % step_size != 0: continue
-
-            self.iteration.append(i)
             if valid_label is not None:
                 self.valid_loss.append(self.CRE(valid_point, valid_label))
 

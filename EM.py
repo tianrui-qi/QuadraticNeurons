@@ -57,7 +57,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, epoch=2000, epsilon=1e-8):
+    def train(self, train_point, epoch=200, epsilon=1e-6):
         """
         Repeat E step and M step for "epoch" number of iteration.
 
