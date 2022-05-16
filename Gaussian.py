@@ -4,7 +4,9 @@ import matplotlib.patches as mp
 
 
 class Gaussian:
-    def __init__(self, D, K, mu_set=None, cov_set=None):
+    def __init__(self, D, K, background=False, index=None):
+        self.background = background
+
         # basic dimension parameters
         self.D = D          # dimension, int
         self.K = K          # number of class, int
@@ -29,33 +31,48 @@ class Gaussian:
         self.test_label  = []
 
         # set parameters, generate sample and split sample using help function
-        self.set_parameter(mu_set, cov_set)
+        self.set_parameter(index)
         self.generate_sample()
         self.split_sample()
 
-    def set_parameter(self, mu_set=None, cov_set=None):
-        # mu
-        self.mu_set = [(np.random.random(self.D) - 0.5) * 10
-                       for _ in range(self.K - 1)]
-        self.mu_set.insert(0, np.zeros(self.D))
+    def set_parameter(self, index=None):
+        if index is None: index = [2000, 3000]
+        if self.background:
+            # mu
+            self.mu_set = [(np.random.random(self.D) - 0.5) * 10
+                           for _ in range(self.K - 1)]
+            self.mu_set.insert(0, np.zeros(self.D))
 
-        # covariance
-        self.cov_set = [40 * np.eye(self.D)]
-        for i in range(self.K - 1):
-            a = np.random.random((self.D, self.D)) * 2 - 1
-            cov = np.dot(a, a.T) + np.dot(a, a.T)
-            self.cov_set.append(cov)
+            # covariance
+            self.cov_set = [40 * np.eye(self.D)]
+            for i in range(self.K - 1):
+                a = np.random.random((self.D, self.D)) * 2 - 1
+                cov = np.dot(a, a.T) + np.dot(a, a.T)
+                self.cov_set.append(cov)
 
-        # prior probability
-        self.N_set = [np.random.randint(20000, 30000)
-                      for _ in range(self.K - 1)]
-        self.N_set.insert(0, int(sum(self.N_set)))
+            # prior probability
+            self.N_set = [np.random.randint(index[0], index[1])
+                          for _ in range(self.K - 1)]
+            self.N_set.insert(0, int(sum(self.N_set)))
+        else:
+            # mu
+            self.mu_set = [(np.random.random(self.D) - 0.5) * 10
+                           for _ in range(self.K)]
+
+            # covariance
+            self.cov_set = []
+            for i in range(self.K):
+                a = np.random.random((self.D, self.D)) * 2 - 1
+                cov = np.dot(a, a.T) + np.dot(a, a.T)
+                self.cov_set.append(cov)
+
+            # prior probability
+            self.N_set = [np.random.randint(index[0], index[1])
+                          for _ in range(self.K)]
+
         self.N_set = np.array(self.N_set)
         self.N = sum(self.N_set)
         self.prio_p = np.divide(self.N_set, self.N)  # [ K ]
-
-        # manually set
-        if mu_set is not None: self.mu_set, self.cov_set = mu_set, cov_set
 
     def generate_sample(self):
         sample_set = []
@@ -113,7 +130,8 @@ class Gaussian:
         # set the legend
         legend = [mp.Patch(color=color[i], label="Gaussian_{}".format(i))
                   for i in range(self.K)]
-        legend[0] = mp.Patch(color=color[0], label="Background")
+        if self.background:
+            legend[0] = mp.Patch(color=color[0], label="Background")
         plt.legend(handles=legend, fontsize=8)
 
         edge = 10

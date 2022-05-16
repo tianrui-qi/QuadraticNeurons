@@ -11,7 +11,7 @@ class NN:
         :param activation_func:dictionary, { layer index : function }
             the activation function after each layers' output, including hidden
             and output layers
-        :param NN_type: which type of neural network: "QNN" or "LNN"
+        :param NN_type: which type of neural network: "QNN" or "CNN"
         """
         self.NN_type = NN_type
 
@@ -43,9 +43,9 @@ class NN:
         self.train_time = 0
         self.valid_loss = []
 
-    def _initialize_LNN(self):
+    def _initialize_CNN(self):
         """
-        Initialize parameters for LNN
+        Initialize parameters for CNN
 
         See https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf (English)
             https://arxiv.org/abs/1502.01852 (English)
@@ -125,7 +125,7 @@ class NN:
                 self.v[key] = np.zeros((1, node_to))
 
     def initialize(self):
-        if self.NN_type == "LNN": return self._initialize_LNN()
+        if self.NN_type == "CNN": return self._initialize_CNN()
         if self.NN_type == "QNN": return self._initialize_QNN()
 
     def load(self, para, h, m, v):
@@ -154,7 +154,7 @@ class NN:
 
     """ Trainer """
 
-    def _gradient_LNN(self, point, label):
+    def _gradient_CNN(self, point, label):
         """
         "Backpropagation"
 
@@ -254,7 +254,7 @@ class NN:
         return grad
 
     def gradient(self, point, label):
-        if self.NN_type == "LNN": return self._gradient_LNN(point, label)
+        if self.NN_type == "CNN": return self._gradient_CNN(point, label)
         if self.NN_type == "QNN": return self._gradient_QNN(point, label)
 
     def _SGD(self, grad):
@@ -347,7 +347,7 @@ class NN:
     def train(self, train_point, train_label,
               valid_point=None, valid_label=None,
               opt_para=None, optimizer="Adam",
-              epoch=20000, stop_point=200, step_size=1):
+              epoch=20000, stop_point=500, step_size=1):
         """
         Use a gradient calculator to calculate the gradient of each parameter
         and then use optimizer to update parameters.
@@ -398,7 +398,7 @@ class NN:
 
     """ Estimator """
 
-    def _predict_LNN(self, point):
+    def _predict_CNN(self, point):
         a = point  # [ N * K ], np.array
         for l in range(self.L):
             z = np.dot(a, self.para['w' + str(l)]) + self.para['b' + str(l)]
@@ -416,7 +416,7 @@ class NN:
         return a  # [ N * K ], np.array
 
     def predict(self, point):
-        if self.NN_type == "LNN": return self._predict_LNN(point)
+        if self.NN_type == "CNN": return self._predict_CNN(point)
         if self.NN_type == "QNN": return self._predict_QNN(point)
 
     def CRE(self, point, label):

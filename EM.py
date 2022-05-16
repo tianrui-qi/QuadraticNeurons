@@ -57,7 +57,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, epoch=500, epsilon=1e-8):
+    def train(self, train_point, epoch=1000, epsilon=1e-8):
         """
         Repeat E step and M step for "epoch" number of iteration.
 
@@ -100,22 +100,28 @@ class EM:
         Returns:
             accuracy, float
         """
-        order = []  # [ K ], store the correct order
+        order = [i for i in range(self.K)]  # [ K ], store the correct order
         accuracy = 0
 
         # 1. get the correct order
         t = np.argmax(label, axis=1)
-        for j in list(itertools.permutations([i for i in range(self.K)],
-                                             self.K)):
-            y = np.argmax(self.predict(point)[:, j], axis=1)
-            current_accuracy = np.sum(y == t) / len(label)
-            if current_accuracy > accuracy:
-                order = j
-                accuracy = current_accuracy
+        for _ in range(20):
+            for i in range(self.K):
+                for j in range(self.K):
+                    if i == j: continue
+                    temp = np.copy(order)
+                    temp[i], temp[j] = temp[j], temp[i]
+
+                    y = np.argmax(self.predict(point)[:, temp], axis=1)
+
+                    current_accuracy = np.sum(y == t) / len(label)
+                    if current_accuracy > accuracy:
+                        order = temp
+                        accuracy = current_accuracy
 
         # 2. change the order of mu, cov, prior probability
         for data in (self.mu_set, self.cov_set, self.prio_p):
-            temp = np.copy(data)    # store the old data
+            temp = np.copy(data)  # store the old data
             for i in range(self.K):
                 data[i] = temp[order[i]]
 
