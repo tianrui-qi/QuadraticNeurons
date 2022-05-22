@@ -369,32 +369,26 @@ class NN:
 
         stop_track = 0
         loss_max = 1000
-        for i in range(epoch):
-            if stop_point <= stop_track: break
-
-            # Main part ========================================================
+        for _ in range(epoch):
             begin = time.time()
 
-            self.optimizer(optimizer, self.gradient(train_point, train_label))
+            # train
+            for _ in range(step_size):
+                self.optimizer(optimizer,
+                               self.gradient(train_point, train_label))
 
             end = time.time()
             self.train_time += end - begin
-            # ==================================================================
 
-            """ Recording """
-
-            if i % step_size != 0: continue
-            if valid_label is not None:
-                self.valid_loss.append(self.CRE(valid_point, valid_label))
-
-            """ Early Stopping """
-
+            # early stopping
             if valid_label is None: continue
+            self.valid_loss.append(self.CRE(valid_point, valid_label))
             if self.valid_loss[-1] < loss_max:
                 stop_track = 0
                 loss_max = self.valid_loss[-1]
             else:
                 stop_track += step_size
+            if stop_point <= stop_track: break
 
     """ Estimator """
 
