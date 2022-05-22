@@ -1,5 +1,4 @@
 import time
-import itertools
 import numpy as np
 import scipy.stats as st
 
@@ -57,7 +56,7 @@ class EM:
 
         return self.mu_set, self.cov_set, self.prio_p
 
-    def train(self, train_point, epoch=1000, epsilon=1e-8):
+    def train(self, train_point, epoch=500, epsilon=1e-8):
         """
         Repeat E step and M step for "epoch" number of iteration.
 

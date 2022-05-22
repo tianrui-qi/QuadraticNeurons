@@ -4,7 +4,8 @@ import matplotlib.patches as mp
 
 
 class Gaussian:
-    def __init__(self, D, K, background=False, index=None):
+    def __init__(self, D, K, background=False,
+                 index_para=None, index_split=None):
         self.background = background
 
         # basic dimension parameters
@@ -31,12 +32,12 @@ class Gaussian:
         self.test_label  = []
 
         # set parameters, generate sample and split sample using help function
-        self.set_parameter(index)
+        self.set_parameter(index_para)
         self.generate_sample()
-        self.split_sample()
+        self.split_sample(index_split)
 
     def set_parameter(self, index=None):
-        if index is None: index = [2000, 3000]
+        if index is None: index = [20000, 30000]
         if self.background:
             # mu
             self.mu_set = [(np.random.random(self.D) - 0.5) * 10
@@ -93,9 +94,10 @@ class Gaussian:
         self.point = np.array( [x[0] for x in sample_set] )
         self.label = np.array( [x[1] for x in sample_set] )
 
-    def split_sample(self, index_1=0.5, index_2=0.7):
-        n_1 = int(index_1 * self.N)
-        n_2 = int(index_2 * self.N)
+    def split_sample(self, index=None):
+        if index is None: index = [0.5, 0.7]
+        n_1 = int(index[0] * self.N)
+        n_2 = int(index[1] * self.N)
         self.train_point = np.array([self.point[i] for i in range(n_1)])
         self.train_label = np.array([self.label[i] for i in range(n_1)])
         self.valid_point = np.array([self.point[i] for i in range(n_1, n_2)])
