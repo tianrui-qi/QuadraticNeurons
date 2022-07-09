@@ -194,7 +194,7 @@ class NN:
         da = 0
         for l in range(self.L - 1, -1, -1):
             if self.activation_func[l] == self.softmax:  # softmax with loss
-                dz = (a[l + 1] - label) / len(point)
+                dz = a[l + 1] - label
             elif self.activation_func[l] == self.relu:  # relu
                 dz = da * (a[l + 1] != 0)
             else:  # sigmoid
@@ -227,7 +227,7 @@ class NN:
         da = 0
         for l in range(self.L - 1, -1, -1):
             if self.activation_func[l] == self.softmax:  # softmax with loss
-                dz = (a[l + 1] - label) / len(point)
+                dz = a[l + 1] - label
             elif self.activation_func[l] == self.relu:  # relu
                 dz = da * (a[l + 1] != 0)
             else:  # sigmoid
