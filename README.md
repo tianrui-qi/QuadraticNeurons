@@ -12,4 +12,4 @@ Artifcial neural networks, Quadratic neurons, Quadratic neural networks, Backpro
 
 ## Acknowledgement
 
-This research work was carried out between 2022 and 2023 in Professor Wang's [WANG-AXIS Lab](https://wang-axis.github.io/). I would like to express my sincere gratitude to Prof. Wang for his guidance and assistance. His collective expertise has greatly contributed to my research during this period.
+This research work was carried out between 2022 and 2023 in Professor [Wang](https://www.linkedin.com/in/ge-wang-axis)'s [WANG-AXIS Lab](https://wang-axis.github.io/). I would like to express my sincere gratitude to Prof. Wang for his guidance and assistance. His collective expertise has greatly contributed to my research during this period.
