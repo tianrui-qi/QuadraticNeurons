@@ -1,6 +1,6 @@
 # QuadraticNeurons
 
-This repository contains code and data associated with the paper "Superiority of quadratic over conventional neural networks for classification of Gaussian mixture data". For more detail, please check the paper [here](https://vciba.springeropen.com/articles/10.1186/s42492-022-00118-z).
+This repository contains code and data associated with the paper [Superiority of quadratic over conventional neural networks for classification of Gaussian mixture data](https://vciba.springeropen.com/articles/10.1186/s42492-022-00118-z). For more detail and future work, please check [Fenglei Fan](https://github.com/FengleiFan?tab=stars)'s works and [QuadraLib](https://github.com/zarekxu/QuadraLib). 
 
 ## Abstract
 
