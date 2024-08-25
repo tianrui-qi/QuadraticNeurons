@@ -12,4 +12,4 @@ Artifcial neural networks, Quadratic neurons, Quadratic neural networks, Backpro
 
 ## Acknowledgement
 
-This research work was carried out between 2022 and 2023 in Dr. [Ge Wang](https://www.linkedin.com/in/ge-wang-axis)'s [AI-based X-ray Imaging System (AXIS) Lab](https://wang-axis.github.io/). I would like to express my sincere gratitude to Prof. Wang for his guidance and assistance. His collective expertise has greatly contributed to my research during this period.
+This research work was carried out between 2022 and 2023 in Dr. [Ge Wang](https://www.linkedin.com/in/ge-wang-axis)'s [AI-based X-ray Imaging System (AXIS) Lab](https://wang-axis.github.io/). I would like to express my sincere gratitude to Dr. Wang for his guidance and assistance. His collective expertise has greatly contributed to my research during this period.
